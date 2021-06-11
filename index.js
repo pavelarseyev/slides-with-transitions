@@ -163,6 +163,37 @@ class myBanner {
 
 }
 
-const banner = new myBanner({
-    ...Widget.properties
-});
+let banner;
+const settings = document.getElementById('settings');
+let myEv = new Event('settings-changed');
+
+window.addEventListener('settings-changed', addSettings);
+addSettings();
+
+settings.addEventListener('change', () => {window.dispatchEvent(myEv)});
+
+
+function addSettings() {
+    const animationType = document.getElementById('animation-type').value;
+    const transitionDirection = document.getElementById('direction').value;
+    const transitionTime = document.getElementById('speed').value;
+    const imageShowTime = document.getElementById('image-duration').value;
+    const particlesPerrow = document.getElementById('particles-per-row').value;
+    const particlesPerColumn = document.getElementById('particles-per-column').value;
+    const particlesColor = document.getElementById('particles-color').value;
+
+
+    Widget.properties = {
+        ...Widget.properties,
+        animationType,
+        transitionDirection,
+        transitionTime,
+        imageShowTime,
+        particlesPerrow,
+        particlesPerColumn,
+        particlesColor
+    }
+    banner = new myBanner({
+        ...Widget.properties
+    });
+}

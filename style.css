@@ -18,14 +18,30 @@ canvas {
     height: 100vh;
 }
 
-/* .widget-wrapper::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    border: 2px solid red;
-    transform: translate(-50%, -50%);
-} */
+.settings {
+    position: fixed;
+    top: 0;
+    right: 0;
+    z-index: 3;
+    width: 200px;
+    padding: 10px;
+    background-color: rgba(255,255,255, .8);
+}
+
+.settings div {
+    margin-bottom: 5px;
+}
+
+input, select {
+    background: transparent;
+    width: 100%;
+    height: 40px;
+    padding: 0 15px;
+    border: 1px solid black;
+    margin-bottom: 5px;
+}
+
+[type="number"] {
+    appearance: none;
+}
+
