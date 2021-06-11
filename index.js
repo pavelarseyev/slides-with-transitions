@@ -11,20 +11,31 @@ const Widget = {
     }
 }
 
+let loop;
+
 class myBanner {
     constructor(options) {
         // this.time = 0;
+        this.animationType = options.animationType;
+        this.transitionDirection = options.transitionDirection;
+
         //transition options start
-        this.transitionTime = options.transitionTime > 0 ? options.transitionTime * 100 : 1000;
-        this.particles = [];
+        this.transitionTime = +options.transitionTime > 0 ? +options.transitionTime * 100 : 1000;
         //transition options end
 
-        //image show options start
-        this.imageShowTime = options.imageShowTime > 0 ? options.imageShowTime * 1000 + this.transitionTime : 3000 + this.transitionTime;
+        // particles settings start
+        this.rows = options.particlesPerColumn > 0 ? options.particlesPerColumn : 10;
+        this.cols = options.particlesPerRow > 0 ? options.particlesPerRow : 10;
+        this.particlesColor = options.particlesColor;
+        this.particles = [];
+        // particles settings end
+
+        //image options start
+        this.imageShowTime = (+options.imageShowTime > 0 ? +options.imageShowTime * 1000 : 3000) + this.transitionTime;
         this.images = [];
         this.currentImage = 0;
         this.maxImages = 4;
-        //image show options end
+        //image options end
 
 
         //elements set start
@@ -40,6 +51,8 @@ class myBanner {
         this.canvas.width = this.w;
         this.canvas.height = this.h;
         //set dimensions end
+
+        this.isPaused = false;
 
         //wait until all images are loaded
         Promise.all(this.createImages(options)).then(() => {
@@ -74,7 +87,7 @@ class myBanner {
                 img.src = options[`img${i+1}`];
                 this.images.push({
                     img,
-                    opacity: 0,
+                    opacity: 0.1,
                     visibleTime: 0
                 });
             }));
@@ -99,8 +112,8 @@ class myBanner {
             this.ctx.save();
             this.ctx.globalAlpha = item.opacity;
             //Show the images in a row
-            // this.ctx.drawImage(item.img, i* (this.w/this.images.length), 0, this.w/this.maxImages, this.h);
-            this.ctx.drawImage(item.img, 0, 0, this.w, this.h);
+            this.ctx.drawImage(item.img, i* (this.w/this.images.length), 0, this.w/this.maxImages, this.h);
+            // this.ctx.drawImage(item.img, 0, 0, this.w, this.h);
             this.ctx.restore();
         });
     }
@@ -155,22 +168,52 @@ class myBanner {
 
     render() {
         // this.time += 0.05;
-        this.update();
-        this.draw();
-
-        window.requestAnimationFrame(this.render.bind(this));
+        
+        if (!this.isPaused) {
+            this.update();
+            this.draw();
+        }
+        
+        loop = window.requestAnimationFrame(this.render.bind(this));
     }
 
+    destroy() {
+        if (loop) { 
+            window.cancelAnimationFrame(loop);
+            loop = null;
+        }
+    }
 }
 
 let banner;
+
+// helpers start
 const settings = document.getElementById('settings');
+const playBtn = document.getElementById('play');
+const pauseBtn = document.getElementById('pause');
 let myEv = new Event('settings-changed');
 
 window.addEventListener('settings-changed', addSettings);
-addSettings();
 
+playBtn.addEventListener('click', () => {
+    if (banner) {
+        banner.isPaused = false;
+    }
+
+    playBtn.classList.add('active');
+    pauseBtn.classList.remove('active');
+});
+pauseBtn.addEventListener('click', () => {
+    if (banner) {
+        banner.isPaused = true;
+    }
+
+    pauseBtn.classList.add('active');
+    playBtn.classList.remove('active');
+});
 settings.addEventListener('change', () => {window.dispatchEvent(myEv)});
+
+addSettings();
 
 
 function addSettings() {
@@ -178,10 +221,14 @@ function addSettings() {
     const transitionDirection = document.getElementById('direction').value;
     const transitionTime = document.getElementById('speed').value;
     const imageShowTime = document.getElementById('image-duration').value;
-    const particlesPerrow = document.getElementById('particles-per-row').value;
+    const particlesPerRow = document.getElementById('particles-per-row').value;
     const particlesPerColumn = document.getElementById('particles-per-column').value;
     const particlesColor = document.getElementById('particles-color').value;
-
+    
+    if (banner) {
+        banner.destroy();
+        banner = {};
+    }
 
     Widget.properties = {
         ...Widget.properties,
@@ -189,11 +236,13 @@ function addSettings() {
         transitionDirection,
         transitionTime,
         imageShowTime,
-        particlesPerrow,
+        particlesPerRow,
         particlesPerColumn,
         particlesColor
     }
+
     banner = new myBanner({
         ...Widget.properties
     });
 }
+//helpers end

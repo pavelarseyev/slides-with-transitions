@@ -20,12 +20,13 @@ canvas {
 
 .settings {
     position: fixed;
-    top: 0;
-    right: 0;
+    top: 10px;
+    right: 10px;
     z-index: 3;
     width: 200px;
     padding: 10px;
     background-color: rgba(255,255,255, .8);
+    box-shadow: 0 0 10px 5px rgba(0,0,0,.1);
 }
 
 .settings div {
@@ -45,3 +46,27 @@ input, select {
     appearance: none;
 }
 
+.buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+
+.buttons button {
+    width: calc(50% - 5px);
+    border: 1px solid tomato;
+    font-size: 18px;
+    padding: 3px 5px;
+    cursor: pointer;
+    transition: all .3s;
+}
+
+.buttons button:hover,
+.buttons .active {
+    color: white;
+    background-color: tomato;
+}
+
+.buttons .active {
+    pointer-events: none;
+}
