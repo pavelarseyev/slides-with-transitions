@@ -16,6 +16,9 @@ let loop;
 class myBanner {
     constructor(options) {
         // this.time = 0;
+        this.frameRate = 60;
+        this.startTime = new Date().getTime();
+        this.framesPerSecond = 0;
         this.animationType = options.animationType;
         this.transitionDirection = options.transitionDirection;
 
@@ -126,11 +129,11 @@ class myBanner {
             current.opacity = 1;
         }
 
-        current.visibleTime += 1000 / 60; 
+        current.visibleTime += 1000 / this.frameRate; 
 
         if (current.visibleTime >= (this.imageShowTime - this.transitionTime)) {
 
-            const changeOpacityStep = 1 / (this.transitionTime / (1000/60));
+            const changeOpacityStep = 1 / (this.transitionTime / (1000/this.frameRate));
 
             if (current.opacity > 0) {
                 // hide current images
@@ -166,8 +169,23 @@ class myBanner {
         this.ctx.clearRect(0,0, this.w, this.h);
     }
 
+    fixFrameRate() {
+        // get the proper frameRate count in case if it is more than 60
+        if ((new Date().getTime() - this.startTime) <= 1000) {
+            this.framesPerSecond += 1;
+        } else {
+            this.startTime = new Date().getTime();
+
+            if (this.frameRate < this.framesPerSecond) {
+                this.frameRate = this.framesPerSecond;
+            }
+
+            this.framesPerSecond = 0;
+        }
+    }
+
     render() {
-        // this.time += 0.05;
+        this.fixFrameRate();
         
         if (!this.isPaused) {
             this.update();
