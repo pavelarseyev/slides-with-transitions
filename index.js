@@ -119,7 +119,7 @@ class myBanner {
 
         for(let row = 0; row < this.rows; row++) {
             for(let column = 0; column < this.cols + additionalColumns; column++) {
-                x = this.particleWidth * column - this.particleWidth*(additionalColumns/2);
+                x = this.particleWidth * column - this.particleWidth*(additionalColumns/2) + (this.skewSize * row);
                 y = this.particleHeight * row;
 
                 switch (this.animationType) {
@@ -149,18 +149,18 @@ class myBanner {
     drawParticles() {
         this.particles.forEach(({x, y, fill, row}, i) => {
             if (fill !== 'transparent') {
-                const offset = this.skewSize * row; 
+                // const offset = this.skewSize * row; 
 
                 this.ctx.fillStyle = fill;
                 this.ctx.beginPath();
                 // if (i >= 0) {
                 //     this.ctx.fillStyle = 'rgba(255, 0, 0, .5)';
                 // }
-                this.ctx.moveTo(x - this.skewSize + offset, y);
+                this.ctx.moveTo(x - this.skewSize, y);
                 // +0.5to fix spaces between particles
-                this.ctx.lineTo(x + this.particleWidth - this.skewSize + 0.5 + offset, y);
-                this.ctx.lineTo(x + this.particleWidth + 0.5 + offset, y + this.particleHeight + 0.5);
-                this.ctx.lineTo(x + offset, y + this.particleHeight + 0.5);
+                this.ctx.lineTo(x + this.particleWidth - this.skewSize + 1, y);
+                this.ctx.lineTo(x + this.particleWidth + 1, y + this.particleHeight + 1);
+                this.ctx.lineTo(x, y + this.particleHeight + 1);
                 this.ctx.closePath();
                 this.ctx.fill();
             }
