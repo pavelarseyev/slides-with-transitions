@@ -5,9 +5,14 @@ const Widget = {
         img3: `https://picsum.photos/id/${Math.floor(Math.random() * 50)}/300/300`,
         img4: `https://picsum.photos/id/${Math.floor(Math.random() * 50)}/300/300`,
         //in seconds, default is 3
-        imageShowTime: 1,
+        imageShowTime: 3,
         // set the one tenth step, default is 1 second
-        transitionTime: 10,
+        transitionTime: 20,
+        animationType: 'Transition 1',
+        transitionDirection: 'Left-Right',
+        particlesPerColumn: 10,
+        particlesPerRow: 10,
+        particlesColor: 'rgb(0,255,0)'
     }
 }
 
@@ -53,6 +58,10 @@ class myBanner {
         this.h = this.container.offsetHeight * this.ratio;
         this.canvas.width = this.w;
         this.canvas.height = this.h;
+        this.particleWidth = this.w / this.cols;
+        this.particleHeight = this.h / this.rows;
+        this.skewPercent = 0.1;
+        this.skewSize = this.particleWidth * this.skewPercent;
         //set dimensions end
 
         this.isPaused = false;
@@ -75,6 +84,11 @@ class myBanner {
         this.ratio = window.devicePixelRatio;
         this.w = this.canvas.width = this.container.offsetWidth * this.ratio;
         this.h = this.canvas.height = this.container.offsetHeight * this.ratio;
+        this.particleWidth = this.w / this.cols;
+        this.particleHeight = this.h / this.rows;
+        this.skewSize = this.particleWidth * this.skewPercent;
+        this.particles = [];
+        this.createParticles();
     }
 
     //TODO: add Widget.optimisedImageUrls
@@ -90,7 +104,7 @@ class myBanner {
                 img.src = options[`img${i+1}`];
                 this.images.push({
                     img,
-                    opacity: 0.1,
+                    opacity: 0,
                     visibleTime: 0
                 });
             }));
@@ -99,25 +113,98 @@ class myBanner {
     }
 
     createParticles() {
+        let x = 0;
+        let y = 0;
 
+        for(let row = 0; row < this.rows; row++) {
+            for(let column = 0; column <= this.cols; column++) {
+                x = this.particleWidth * column;
+                y = this.particleHeight * row;
+
+                switch (this.animationType) {
+                    case 'Transition 1':        
+                        x -= this.skewSize;
+                        break;
+                    case 'Transition 2':
+
+                        break;
+                    case 'Transition 3':
+
+                        break;
+                }
+
+                this.particles.push({
+                    x: x,
+                    y: y,
+                    liveTime: this.images[this.currentImage].visibleTime,
+                    fill: 'transparent'
+                });
+            }
+        }
     }
     
     drawParticles() {
-
+        this.particles.forEach(({x, y, fill}, i) => {
+            if (fill !== 'transparent') {
+                this.ctx.fillStyle = fill;
+                this.ctx.beginPath();
+                if (i < 2) {
+                    // this.ctx.fillStyle = 'rgba(255, 0, 0, .5)';
+                }
+                this.ctx.moveTo(x + this.skewSize, y);
+                // +1 to fix spaces between particles
+                this.ctx.lineTo(x + this.particleWidth + this.skewSize + 0.5, y);
+                this.ctx.lineTo(x + this.particleWidth + 0.5, y + this.particleHeight + 0.5);
+                this.ctx.lineTo(x, y + this.particleHeight + 0.5);
+                this.ctx.closePath();
+                this.ctx.fill();
+            }
+        });
     }
 
     updateParticles() {
+        this.particles.forEach(p => {
+            switch (this.animationType) {
+                case 'Transition 1':
+                    p.liveTime += 1000 / this.frameRate;
 
+                    if (p.liveTime > (this.imageShowTime - this.transitionTime)) {
+                        if (p.fill === 'transparent') {
+                            p.fill = Math.random() < 0.25 ? this.particlesColor : 'transparent';
+                        }
+                        
+                        if (p.liveTime > this.imageShowTime) {
+                            p.fill = Math.random() < 0.25 ? 'transparent' : this.particlesColor;
+
+                            if (p.fill === 'transparent') {
+                                p.liveTime = this.images[this.currentImage].visibleTime;
+                            }
+                        }
+                    }
+
+                    break;
+                case 'Transition 2':
+
+                    break;
+                case 'Transition 3':
+
+                    break;
+            }
+        });
     }
 
     drawImages() {
         this.images.forEach((item, i) => {
-            this.ctx.save();
-            this.ctx.globalAlpha = item.opacity;
-            //Show the images in a row
-            this.ctx.drawImage(item.img, i* (this.w/this.images.length), 0, this.w/this.maxImages, this.h);
-            // this.ctx.drawImage(item.img, 0, 0, this.w, this.h);
-            this.ctx.restore();
+            if (item.opacity > 0) {
+                this.ctx.save();
+                this.ctx.globalAlpha = item.opacity;
+                //Show the images in a row
+                // this.ctx.drawImage(item.img, i* (this.w/this.images.length), 0, this.w/this.maxImages, this.h);
+                
+                this.ctx.drawImage(item.img, 0, 0, this.w, this.h);
+                
+                this.ctx.restore();
+            }
         });
     }
 
@@ -233,14 +320,13 @@ settings.addEventListener('change', () => {window.dispatchEvent(myEv)});
 
 addSettings();
 
-
 function addSettings() {
     const animationType = document.getElementById('animation-type').value;
     const transitionDirection = document.getElementById('direction').value;
-    const transitionTime = document.getElementById('speed').value;
-    const imageShowTime = document.getElementById('image-duration').value;
-    const particlesPerRow = document.getElementById('particles-per-row').value;
-    const particlesPerColumn = document.getElementById('particles-per-column').value;
+    const transitionTime = +document.getElementById('speed').value;
+    const imageShowTime = +document.getElementById('image-duration').value;
+    const particlesPerRow = +document.getElementById('particles-per-row').value;
+    const particlesPerColumn = +document.getElementById('particles-per-column').value;
     const particlesColor = document.getElementById('particles-color').value;
     
     if (banner) {
