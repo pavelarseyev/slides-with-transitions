@@ -115,10 +115,11 @@ class myBanner {
     createParticles() {
         let x = 0;
         let y = 0;
+        let additionalColumns = Math.ceil((this.skewSize * this.rows) / (this.particleWidth - this.skewSize)) * 2;
 
         for(let row = 0; row < this.rows; row++) {
-            for(let column = 0; column < this.cols + 4; column++) {
-                x = this.particleWidth * column - this.particleWidth*2;
+            for(let column = 0; column < this.cols + additionalColumns; column++) {
+                x = this.particleWidth * column - this.particleWidth*(additionalColumns/2);
                 y = this.particleHeight * row;
 
                 switch (this.animationType) {
