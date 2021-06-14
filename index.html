@@ -10,44 +10,52 @@
 <body>
     <div class="container">
         <div class="settings" id="settings">
-            <div class="buttons">
-                <button id="play" class="active">Play</button>
-                <button id="pause">Pause</button>
+            <input type="checkbox" id="toggler" checked>
+            <label for="toggler">Show settings</label>
+
+            <div class="settings-wrapper">
+                <div class="buttons">
+                    <button id="play" class="active">Play</button>
+                    <button id="pause">Pause</button>
+                </div>
+                <div>Animation type</div>
+                <select id="animation-type">
+                    <option value="Transition 1">Transition 1</option>
+                    <option value="Transition 2" selected>Transition 2</option>
+                    <option value="Transition 3">Transition 3</option>
+                </select>
+    
+                <div>Transition direction (only for 2nd and 3rd transitions)</div>
+                <select id="direction">
+                    <option value="Left-Right" selected>Left-Right</option>
+                    <option value="Right-Left">Right-Left</option>
+                    <option value="Up-Down">Up-Down</option>
+                    <option value="Bottom-up">Bottom-up</option>
+                    <!-- <option value="Center-Out">Center - Out</option>
+                    <option value="Out-center">Out - center</option> -->
+                </select>
+    
+                <div>Transition time (1/10 s)</div>
+                <input type="number" value="5" id="speed">
+    
+                <div>Image show duration</div>
+                <input type="number" value="4" id="image-duration">
+    
+                <div>Particles per row</div>
+                <input type="number" value="10" id="particles-per-row">
+    
+                <div>Particles per column</div>
+                <input type="number" value="10" id="particles-per-column">
+    
+                <div>Particles color 1</div>
+                <input type="color" id="particles-color" value="#ffffff">
+
+                <div>Particles color 2</div>
+                <input type="color" id="particles-color2" value="#000000">
+                
+                <div>Skew size</div>
+                <input type="number" id="skew" value="1">
             </div>
-            <div>Animation type</div>
-            <select id="animation-type">
-                <option value="Transition 1">Transition 1</option>
-                <option value="Transition 2" selected>Transition 2</option>
-                <option value="Transition 3">Transition 3</option>
-            </select>
-
-            <div>Transition direction</div>
-            <select id="direction">
-                <option value="Left-Right" selected>Left-Right</option>
-                <option value="Right-left">Right-left</option>
-                <option value="Up-Down">Up-Down</option>
-                <option value="Down-up">Down-up</option>
-                <option value="Center-Out">Center - Out</option>
-                <option value="Out-center">Out - center</option>
-            </select>
-
-            <div>Transition time (1/10 s)</div>
-            <input type="number" value="10" id="speed">
-
-            <div>Image show duration</div>
-            <input type="number" value="3" id="image-duration">
-
-            <div>Particles per row</div>
-            <input type="number" value="10" id="particles-per-row">
-
-            <div>Particles per column</div>
-            <input type="number" value="10" id="particles-per-column">
-
-            <div>Particles color</div>
-            <input type="color" id="particles-color" value="#ffffff">
-            
-            <div>Skew size</div>
-            <input type="number" id="skew" value="1">
         </div>
 
         <div class="widget-wrapper" id="widget-wrapper">

@@ -25,12 +25,13 @@ canvas {
     z-index: 3;
     width: 200px;
     padding: 10px;
+    margin-left: -100px;
     background-color: rgba(255,255,255, .8);
     box-shadow: 0 0 10px 5px rgba(0,0,0,.1);
 }
 
 .settings div {
-    margin-bottom: 5px;
+    margin-bottom: 6px;
 }
 
 input, select {
@@ -39,7 +40,7 @@ input, select {
     height: 40px;
     padding: 0 15px;
     border: 1px solid black;
-    margin-bottom: 5px;
+    margin-bottom: 10px;
 }
 
 [type="number"] {
@@ -69,4 +70,23 @@ input, select {
 
 .buttons .active {
     pointer-events: none;
+}
+
+[type="checkbox"] {
+    width: 10px;
+    height: 10px;
+    margin-right: 5px;
+}
+
+label {
+    font-size: 16px;
+}
+
+.settings-wrapper {
+    display: none;
+    padding-top: 15px;
+}
+
+:checked ~ .settings-wrapper {
+    display: block;
 }

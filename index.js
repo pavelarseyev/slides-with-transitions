@@ -11,6 +11,7 @@ const Widget = {
         animationType: 'Transition 2',
         transitionDirection: 'Left-Right',
         particlesColor: 'rgb(0,255,0)',
+        particlesColor2: 'rgb(255,255,0)',
         particlesPerColumn: 10,
         particlesPerRow: 10,
         skewSize: 1
@@ -34,6 +35,7 @@ class myBanner {
         this.rows = options.particlesPerColumn > 0 ? options.particlesPerColumn : 10;
         this.cols = options.particlesPerRow > 0 ? options.particlesPerRow : 10;
         this.particlesColor = options.particlesColor;
+        this.particlesColor2 = options.particlesColor2;
         this.particles = [];
         // particles settings end
 
@@ -116,31 +118,58 @@ class myBanner {
         let x = 0;
         let y = 0;
         let additionalColumns = Math.ceil((Math.abs(this.skewSize) * this.rows) / (this.particleWidth)) * 2;
+        let fill = this.particlesColor;
+        let speedReferencePoint;
 
         for(let row = 0; row < this.rows; row++) {
             for(let column = 0; column < this.cols + additionalColumns; column++) {
                 x = this.particleWidth * column - this.particleWidth*(additionalColumns/2) + (this.skewSize * row);
                 y = this.particleHeight * row;
 
-                switch (this.animationType) {
-                    case 'Transition 1':        
-                        
-                        break;
-                    case 'Transition 2':
+                if (this.animationType === 'Transition 1') {
+                    fill = 'transparent';
 
-                        break;
-                    case 'Transition 3':
+                } else if (this.animationType === 'Transition 2') {
 
-                        break;
+                    switch (this.transitionDirection) {
+                        case 'Left-Right':
+                            // move x position by canvas width + columns count multiple by particle width plus doubled skewSize + row skew summ
+                            x = (this.particleWidth + this.skewSize) * -1 - (Math.random(this.particleWidth) + this.particleWidth);
+                            speedReferencePoint = column;
+                            break;
+                        case 'Right-Left':
+                            x = this.w + this.skewSize + (Math.random(this.particleWidth) + this.particleWidth);
+                            speedReferencePoint = column;
+                            break;
+                        case 'Up-Down':
+                            y = (this.particleHeight + 2) * -1;
+                            speedReferencePoint = row;
+                            break;
+                        case 'Bottom-up':
+                            y = this.h + 2;
+                            speedReferencePoint = row;
+                            break;
+                        /* case 'Center-Out':
+                            
+                            break;
+                        case 'Out-center':
+    
+                            break; */
+                    }
+                } else if (this.animationType === 'Transition 3') {
+
                 }
 
                 this.particles.push({
+                    startXPosition: x,
+                    startYPosition: y,
                     x: x,
                     y: y,
                     row: row,
                     col: column,
                     liveTime: this.images[this.currentImage].visibleTime,
-                    fill: 'transparent'
+                    fill: fill,
+                    speedReferencePoint
                 });
             }
         }
@@ -169,32 +198,73 @@ class myBanner {
     }
 
     updateParticles() {
-        this.particles.forEach(p => {
-            switch (this.animationType) {
-                case 'Transition 1':
-                    p.liveTime += 1000 / this.frameRate;
+        this.particles.forEach((p, i) => {
+            /* start counting of particle lifetime */
+            p.liveTime += 1000 / this.frameRate;
 
-                    if (p.liveTime > (this.imageShowTime - this.transitionTime)) {
+            if (this.animationType === 'Transition 1') {
+                if (p.liveTime > (this.imageShowTime - this.transitionTime)) {
+                    if (p.fill === 'transparent') {
+                        p.fill = Math.random() < 0.25 ? this.particlesColor : 'transparent';
+                    }
+                    
+                    if (p.liveTime > this.imageShowTime) {
+                        p.fill = Math.random() < 0.25 ? 'transparent' : this.particlesColor;
+
                         if (p.fill === 'transparent') {
-                            p.fill = Math.random() < 0.25 ? this.particlesColor : 'transparent';
-                        }
-                        
-                        if (p.liveTime > this.imageShowTime) {
-                            p.fill = Math.random() < 0.25 ? 'transparent' : this.particlesColor;
-
-                            if (p.fill === 'transparent') {
-                                p.liveTime = this.images[this.currentImage].visibleTime;
-                            }
+                            p.liveTime = this.images[this.currentImage].visibleTime;
                         }
                     }
+                }
+            } else if (this.animationType === 'Transition 2') {
+                let finalSpeed = Math.random() * 150 + (p.speedReferencePoint + 1) * 50;
+                // let finalSpeed = 10;
+                let xStep = finalSpeed;
+                let yStep = finalSpeed;
+                let isOverEdge;
 
-                    break;
-                case 'Transition 2':
+                // set values according to direction of the animation
+                switch (this.transitionDirection) {
+                    case 'Left-Right':
+                        yStep = 0;
+                        isOverEdge = p.x > this.w + this.skewSize;
+                        break;
+                    case 'Right-Left':
+                        xStep *= -1;
+                        yStep = 0;
+                        isOverEdge = p.x < (this.particleWidth + this.skewSize) * -1;
+                        break;
+                    case 'Up-Down':
+                        xStep = 0;
+                        isOverEdge = p.y > this.h;
+                        break;
+                    case 'Bottom-up':
+                        xStep = 0;
+                        yStep *= -1;
 
-                    break;
-                case 'Transition 3':
+                        isOverEdge = p.y < -this.particleHeight;
+                        break;
+                }
 
-                    break;
+                // apply values
+                if (p.liveTime > (this.imageShowTime - (this.transitionTime * 2))) {
+                    p.x += xStep;
+                    p.y += yStep;
+
+                    if (isOverEdge) {
+                        p.x = p.startXPosition;
+                        p.y = p.startYPosition;
+
+                        if (p.liveTime >= this.imageShowTime) {
+                            p.liveTime = this.images[this.currentImage].visibleTime;
+                            // fill with color
+                            p.fill = (this.currentImage + 1) % 2 === 0 ? this.particlesColor2 : this.particlesColor;
+                        }
+                    }
+                }
+
+            } else if(this.animationType === 'Transition 3') {
+
             }
         });
     }
@@ -301,6 +371,7 @@ let banner;
 
 // helpers start
 const settings = document.getElementById('settings');
+const checkBox = document.getElementById('toggler');
 const playBtn = document.getElementById('play');
 const pauseBtn = document.getElementById('pause');
 let myEv = new Event('settings-changed');
@@ -323,7 +394,11 @@ pauseBtn.addEventListener('click', () => {
     pauseBtn.classList.add('active');
     playBtn.classList.remove('active');
 });
+
+checkBox.addEventListener('change', (e) => e.stopPropagation());
 settings.addEventListener('change', () => {window.dispatchEvent(myEv)});
+
+
 
 let timeout;
 addSettings();
@@ -339,6 +414,7 @@ function addSettings() {
     const particlesPerRow = +document.getElementById('particles-per-row').value;
     const particlesPerColumn = +document.getElementById('particles-per-column').value;
     const particlesColor = document.getElementById('particles-color').value;
+    const particlesColor2 = document.getElementById('particles-color2').value;
     const skewSize = +document.getElementById('skew').value
     
     if (banner) {
@@ -358,6 +434,7 @@ function addSettings() {
         particlesPerRow,
         particlesPerColumn,
         particlesColor,
+        particlesColor2,
         skewSize
     }
 
