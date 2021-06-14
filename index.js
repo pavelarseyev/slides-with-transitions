@@ -8,15 +8,14 @@ const Widget = {
         imageShowTime: 3,
         // set the one tenth step, default is 1 second
         transitionTime: 20,
-        animationType: 'Transition 1',
+        animationType: 'Transition 2',
         transitionDirection: 'Left-Right',
+        particlesColor: 'rgb(0,255,0)',
         particlesPerColumn: 10,
         particlesPerRow: 10,
-        particlesColor: 'rgb(0,255,0)'
+        skewSize: 1
     }
 }
-
-let loop;
 
 class myBanner {
     constructor(options) {
@@ -60,11 +59,12 @@ class myBanner {
         this.canvas.height = this.h;
         this.particleWidth = this.w / this.cols;
         this.particleHeight = this.h / this.rows;
-        this.skewPercent = 0.1;
+        this.skewPercent = options.skewSize / 10;
         this.skewSize = this.particleWidth * this.skewPercent;
         //set dimensions end
 
         this.isPaused = false;
+        this.loop = null;
 
         //wait until all images are loaded
         Promise.all(this.createImages(options)).then(() => {
@@ -115,7 +115,7 @@ class myBanner {
     createParticles() {
         let x = 0;
         let y = 0;
-        let additionalColumns = Math.ceil((this.skewSize * this.rows) / (this.particleWidth - this.skewSize)) * 2;
+        let additionalColumns = Math.ceil((Math.abs(this.skewSize) * this.rows) / (this.particleWidth)) * 2;
 
         for(let row = 0; row < this.rows; row++) {
             for(let column = 0; column < this.cols + additionalColumns; column++) {
@@ -147,17 +147,18 @@ class myBanner {
     }
     
     drawParticles() {
-        this.particles.forEach(({x, y, fill, row}, i) => {
+        this.particles.forEach(({ x, y, fill }, i) => {
             if (fill !== 'transparent') {
-                // const offset = this.skewSize * row; 
 
                 this.ctx.fillStyle = fill;
                 this.ctx.beginPath();
+                // TODO: DELETE AFTER DEBUG
                 // if (i >= 0) {
                 //     this.ctx.fillStyle = 'rgba(255, 0, 0, .5)';
                 // }
+                // TODO: DELETE AFTER DEBUG
                 this.ctx.moveTo(x - this.skewSize, y);
-                // +0.5to fix spaces between particles
+                // +1 to fix spaces between particles
                 this.ctx.lineTo(x + this.particleWidth - this.skewSize + 1, y);
                 this.ctx.lineTo(x + this.particleWidth + 1, y + this.particleHeight + 1);
                 this.ctx.lineTo(x, y + this.particleHeight + 1);
@@ -250,7 +251,6 @@ class myBanner {
         this.drawImages();
         this.drawParticles();
     }
-    
 
     update() {
         this.updateImages();
@@ -277,20 +277,22 @@ class myBanner {
     }
 
     render() {
-        this.fixFrameRate();
-        
         if (!this.isPaused) {
+            this.fixFrameRate();
+        
+        
             this.update();
             this.draw();
         }
+
         
-        loop = window.requestAnimationFrame(this.render.bind(this));
+        this.loop = window.requestAnimationFrame(this.render.bind(this));
     }
 
     destroy() {
-        if (loop) { 
-            window.cancelAnimationFrame(loop);
-            loop = null;
+        if (this.loop) { 
+            window.cancelAnimationFrame(this.loop);
+            this.loop = null;
         }
     }
 }
@@ -323,9 +325,13 @@ pauseBtn.addEventListener('click', () => {
 });
 settings.addEventListener('change', () => {window.dispatchEvent(myEv)});
 
+let timeout;
 addSettings();
 
+
 function addSettings() {
+    clearTimeout(timeout);
+
     const animationType = document.getElementById('animation-type').value;
     const transitionDirection = document.getElementById('direction').value;
     const transitionTime = +document.getElementById('speed').value;
@@ -333,11 +339,15 @@ function addSettings() {
     const particlesPerRow = +document.getElementById('particles-per-row').value;
     const particlesPerColumn = +document.getElementById('particles-per-column').value;
     const particlesColor = document.getElementById('particles-color').value;
+    const skewSize = +document.getElementById('skew').value
     
     if (banner) {
         banner.destroy();
         banner = {};
     }
+
+    playBtn.classList.add('active');
+    pauseBtn.classList.remove('active');
 
     Widget.properties = {
         ...Widget.properties,
@@ -347,7 +357,8 @@ function addSettings() {
         imageShowTime,
         particlesPerRow,
         particlesPerColumn,
-        particlesColor
+        particlesColor,
+        skewSize
     }
 
     banner = new myBanner({
