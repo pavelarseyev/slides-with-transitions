@@ -137,11 +137,11 @@ class myBanner {
             let clipTopXPoint;
             let clipBottomXPoint;
 
-            if (this.skewSize < 0) {
+            if (this.skewSize > 0) {
                 clipTopXPoint = this.currentClipPosition;
-                clipBottomXPoint = this.currentClipPosition + this.particleWidth + this.skewSizeAbs;
-            } else if (this.skewSize > 0) {
-                clipTopXPoint = this.currentClipPosition + this.particleWidth + this.skewSizeAbs;
+                clipBottomXPoint = this.currentClipPosition + this.skewSizeAbs * this.rows;
+            } else if (this.skewSize < 0) {
+                clipTopXPoint = this.currentClipPosition + this.skewSizeAbs * this.rows;
                 clipBottomXPoint = this.currentClipPosition;
             } else {
                 clipTopXPoint = clipBottomXPoint = this.currentClipPosition;
@@ -216,7 +216,7 @@ class myBanner {
             }
 
             if (current.visibleTime >= this.imageShowTime) {
-                let clipStep = (this.w + this.particleWidth + this.skewSizeAbs) / (this.transitionTime / (1000 / this.frameRate));
+                let clipStep = (this.w + this.particleWidth + (this.skewSizeAbs * this.rows)) / (this.transitionTime / (1000 / this.frameRate));
 
                 if (this.transitionDirection === 'Left-Right') {
                     this.currentClipPosition += clipStep;
@@ -225,7 +225,7 @@ class myBanner {
                 }
             } else {
                 if (this.transitionDirection === 'Left-Right') {
-                    this.currentClipPosition = 0 - (this.particleWidth + this.skewSizeAbs);
+                    this.currentClipPosition = 0 - (this.particleWidth + this.skewSizeAbs * this.rows);
                 } else if (this.transitionDirection === 'Right-Left') {
                     this.currentClipPosition = this.w;
                 }
@@ -255,29 +255,28 @@ class myBanner {
                 }
             }
         } else if (this.animationType === 'Transition 2') {
-            let particlesPerLine = 4;
+            let particlesPerLine = 2;
             let linesCount = this.animationType === 'Left-Right' || this.animationType === 'Right-left' ? this.rows : this.cols;
             let x;
             let y;
 
             for (let row = 0; row < linesCount; row++) {
               for (let particle = 0; particle < particlesPerLine; particle++) {
-                let width = this.particleWidth;
                 y = this.particleHeight * row;
 
                 switch (this.transitionDirection) {
                   case "Left-Right":
-                    x = (width + this.skewSizeAbs + width * particle) * -1 /* + this.w / 2 */;
+                    x = (this.particleWidth + this.skewSizeAbs + this.particleWidth * particle) * -1 /* + this.w / 2 */;
                     break;
                   case "Right-Left":
-                    x = (this.w + this.skewSizeAbs) + (width * particle )/*  - this.w / 2 */;
+                    x = (this.w + this.skewSizeAbs) + (this.particleWidth * particle )/*  - this.w / 2 */;
                     break;
                   case "Up-Down":
-                    x = width * row;
+                    x = this.particleWidth * row;
                     y = this.particleHeight * particle * -1 /* + this.h / 2 */;
                     break;
                   case "Bottom-up":
-                    x = width * row;
+                    x = this.particleWidth * row;
                     y = this.h + this.particleHeight * particle /* - this.h / 2 */;
                     break;
                 }
@@ -293,9 +292,10 @@ class myBanner {
                   startYPosition: y,
                   x: x,
                   y: y,
+                  row,
                   liveTime: this.images[this.currentImage].visibleTime,
-                  fill: 'rgba(255,255, 0,.5)',
-                  speed: Math.random() * (particlesPerLine - particle) * 150 + 100
+                  fill: this.currentColor,
+                  speed: Math.random() * 100 + 10
                 });
               }
             }
@@ -331,9 +331,9 @@ class myBanner {
                     this.ctx.fillStyle = fill;
                     this.ctx.beginPath();
                     // TODO: DELETE AFTER DEBUG
-                    this.ctx.moveTo(x - this.skewSize, y);
+                    this.ctx.moveTo(x - this.skewSizeAbs, y);
                     // +1 to fix spaces between particles
-                    this.ctx.lineTo(x + this.particleWidth - this.skewSize + 1, y);
+                    this.ctx.lineTo(x + this.particleWidth - this.skewSizeAbs + 1, y);
                     this.ctx.lineTo(x + this.particleWidth + 1, y + this.particleHeight + 1);
                     this.ctx.lineTo(x, y + this.particleHeight + 1);
                     this.ctx.closePath();
@@ -404,7 +404,13 @@ class myBanner {
                         p.x = p.startXPosition;
                         p.y = p.startYPosition;
 
-                        if (p.liveTime >= this.imageShowTime - this.transitionTime) {
+                        if (p.liveTime >= this.imageShowTime) {
+                            p.x = this.currentClipPosition + this.skewSize * (p.row + 1);
+
+                            if (this.transitionDirection === 'Right-Left') {
+                                p.x -= this.particleWidth;
+                            }
+
                             p.liveTime = this.images[this.currentImage].visibleTime;
                             // fill with color
                             this.currentColor = (this.currentImage + 1) % 2 === 0 ? this.particlesColor2 : this.particlesColor;
