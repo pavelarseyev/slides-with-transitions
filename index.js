@@ -36,6 +36,7 @@ class myBanner {
         this.cols = options.particlesPerRow > 0 ? options.particlesPerRow : 10;
         this.particlesColor = options.particlesColor;
         this.particlesColor2 = options.particlesColor2;
+        this.currentColor = this.particlesColor;
         this.particles = [];
         // particles settings end
 
@@ -63,6 +64,8 @@ class myBanner {
         this.particleHeight = this.h / this.rows;
         this.skewPercent = options.skewSize / 10;
         this.skewSize = this.particleWidth * this.skewPercent;
+        this.skewSizeAbs = Math.abs(this.skewSize);
+        this.currentClipPosition = 0;
         //set dimensions end
 
         this.isPaused = false;
@@ -89,6 +92,7 @@ class myBanner {
         this.particleWidth = this.w / this.cols;
         this.particleHeight = this.h / this.rows;
         this.skewSize = this.particleWidth * this.skewPercent;
+        this.skewSizeAbs = Math.abs(this.skewSize);
         this.particles = [];
         this.createParticles();
     }
@@ -111,90 +115,235 @@ class myBanner {
                 });
             }));
         }
+
         return promiseArray;
     }
 
-    createParticles() {
-        let x = 0;
-        let y = 0;
-        let additionalColumns = Math.ceil((Math.abs(this.skewSize) * this.rows) / (this.particleWidth)) * 2;
-        let fill = this.particlesColor;
-        let speedReferencePoint;
+    drawImages() {
+        let current = this.images[this.currentImage];
+        let next = this.images[(this.currentImage + 1) % this.images.length];
 
-        for(let row = 0; row < this.rows; row++) {
-            for(let column = 0; column < this.cols + additionalColumns; column++) {
-                x = this.particleWidth * column - this.particleWidth*(additionalColumns/2) + (this.skewSize * row);
-                y = this.particleHeight * row;
+        if (this.animationType === 'Transition 1') {
+            [current, next].forEach((image, i) => {
+                this.ctx.save();
+                this.ctx.globalAlpha = image.opacity;
+                //Show the images in a row
+                // this.ctx.drawImage(image.img, i* (this.w/this.images.length), 0, this.w/this.maxImages, this.h);
+                
+                this.ctx.drawImage(image.img, 0, 0, this.w, this.h);
+                this.ctx.restore();
+            });
+        } else if (this.animationType === 'Transition 2') {
+            let clipTopXPoint;
+            let clipBottomXPoint;
 
-                if (this.animationType === 'Transition 1') {
-                    fill = 'transparent';
-
-                } else if (this.animationType === 'Transition 2') {
-
-                    switch (this.transitionDirection) {
-                        case 'Left-Right':
-                            // move x position by canvas width + columns count multiple by particle width plus doubled skewSize + row skew summ
-                            x = (this.particleWidth + this.skewSize) * -1 - (Math.random(this.particleWidth) + this.particleWidth);
-                            speedReferencePoint = column;
-                            break;
-                        case 'Right-Left':
-                            x = this.w + this.skewSize + (Math.random(this.particleWidth) + this.particleWidth);
-                            speedReferencePoint = column;
-                            break;
-                        case 'Up-Down':
-                            y = (this.particleHeight + 2) * -1;
-                            speedReferencePoint = row;
-                            break;
-                        case 'Bottom-up':
-                            y = this.h + 2;
-                            speedReferencePoint = row;
-                            break;
-                        /* case 'Center-Out':
-                            
-                            break;
-                        case 'Out-center':
-    
-                            break; */
-                    }
-                } else if (this.animationType === 'Transition 3') {
-
-                }
-
-                this.particles.push({
-                    startXPosition: x,
-                    startYPosition: y,
-                    x: x,
-                    y: y,
-                    row: row,
-                    col: column,
-                    liveTime: this.images[this.currentImage].visibleTime,
-                    fill: fill,
-                    speedReferencePoint
-                });
+            if (this.skewSize < 0) {
+                clipTopXPoint = this.currentClipPosition;
+                clipBottomXPoint = this.currentClipPosition + this.particleWidth + this.skewSizeAbs;
+            } else if (this.skewSize > 0) {
+                clipTopXPoint = this.currentClipPosition + this.particleWidth + this.skewSizeAbs;
+                clipBottomXPoint = this.currentClipPosition;
+            } else {
+                clipTopXPoint = clipBottomXPoint = this.currentClipPosition;
             }
+
+            // draw firstImage
+            // draw image 1
+            if (this.transitionDirection === 'Left-Right') {
+                this.ctx.drawImage(next.img, 0, 0, this.w, this.h);
+            } else if (this.transitionDirection === 'Right-Left') {
+                this.ctx.drawImage(current.img, 0, 0, this.w, this.h);
+            }
+
+            // draw second image
+            this.ctx.save();
+            // draw clip path 2
+            this.ctx.beginPath();
+            this.ctx.moveTo(clipTopXPoint, 0);
+            this.ctx.lineTo(this.w, 0);
+            this.ctx.lineTo(this.w, this.h);
+            this.ctx.lineTo(clipBottomXPoint, this.h);
+            this.ctx.clip();
+            // draw image 2
+            if (this.transitionDirection === 'Left-Right') {
+                this.ctx.drawImage(current.img, 0, 0, this.w, this.h);
+            } else if (this.transitionDirection === 'Right-Left') {
+                this.ctx.drawImage(next.img, 0, 0, this.w, this.h);
+            }
+            this.ctx.restore();
+
+        } else if (this.animationType === 'Transition 3') {
+
         }
     }
-    
-    drawParticles() {
-        this.particles.forEach(({ x, y, fill }, i) => {
-            if (fill !== 'transparent') {
 
-                this.ctx.fillStyle = fill;
-                this.ctx.beginPath();
-                // TODO: DELETE AFTER DEBUG
-                // if (i >= 0) {
-                //     this.ctx.fillStyle = 'rgba(255, 0, 0, .5)';
-                // }
-                // TODO: DELETE AFTER DEBUG
-                this.ctx.moveTo(x - this.skewSize, y);
-                // +1 to fix spaces between particles
-                this.ctx.lineTo(x + this.particleWidth - this.skewSize + 1, y);
-                this.ctx.lineTo(x + this.particleWidth + 1, y + this.particleHeight + 1);
-                this.ctx.lineTo(x, y + this.particleHeight + 1);
-                this.ctx.closePath();
-                this.ctx.fill();
+    updateImages() {
+        let current = this.images[this.currentImage];
+        let next = this.images[(this.currentImage + 1) % this.images.length];
+
+        if (this.animationType === 'Transition 1') {
+            if (current.visibleTime <= 0) {
+                current.opacity = 1;
             }
-        });
+
+            if (current.visibleTime >= this.imageShowTime) {
+                this.currentImage++;
+                this.currentImage = this.currentImage % this.images.length;
+                current.visibleTime = 0;
+            }
+
+            if (current.visibleTime >= (this.imageShowTime - this.transitionTime)) {
+
+                const changeOpacityStep = 1 / (this.transitionTime / (1000/this.frameRate));
+
+                if (current.opacity > 0) {
+                    // hide current images
+                    current.opacity -= changeOpacityStep;
+                    current.opacity = current.opacity < 0 ? 0 : current.opacity;
+
+                    // show next image
+                    if (next.opacity < 1) {
+                        next.opacity += changeOpacityStep;
+                        next.opacity = next.opacity > 1 ? 1 : next.opacity;
+                    }
+                }
+            }
+        } else if (this.animationType === 'Transition 2') {
+            if (current.visibleTime >= this.imageShowTime + this.transitionTime) {
+                this.currentImage++;
+                this.currentImage = this.currentImage % this.images.length;
+                current.visibleTime = 0;
+            }
+
+            if (current.visibleTime >= this.imageShowTime) {
+                let clipStep = (this.w + this.particleWidth + this.skewSizeAbs) / (this.transitionTime / (1000 / this.frameRate));
+
+                if (this.transitionDirection === 'Left-Right') {
+                    this.currentClipPosition += clipStep;
+                } else if (this.transitionDirection === 'Right-Left') {
+                    this.currentClipPosition -= clipStep;
+                }
+            } else {
+                if (this.transitionDirection === 'Left-Right') {
+                    this.currentClipPosition = 0 - (this.particleWidth + this.skewSizeAbs);
+                } else if (this.transitionDirection === 'Right-Left') {
+                    this.currentClipPosition = this.w;
+                }
+            }
+        } else if (this.animationType === 'Transition 3') {
+
+        }
+
+        current.visibleTime += 1000 / (this.frameRate);
+    }
+
+    createParticles() {
+        if (this.animationType === 'Transition 1') {
+            let additionalColumns = Math.ceil((this.skewSizeAbs * this.rows) / (this.particleWidth)) * 2;
+
+            for(let row = 0; row < this.rows; row++) {
+                for(let column = 0; column < this.cols + additionalColumns; column++) {
+                    let x = this.particleWidth * column - this.particleWidth*(additionalColumns/2) + (this.skewSizeAbs * row);
+                    let y = this.particleHeight * row;
+
+                    this.particles.push({
+                        x: x,
+                        y: y,
+                        liveTime: this.images[this.currentImage].visibleTime,
+                        fill: 'transparent'
+                    });
+                }
+            }
+        } else if (this.animationType === 'Transition 2') {
+            let particlesPerLine = 4;
+            let linesCount = this.animationType === 'Left-Right' || this.animationType === 'Right-left' ? this.rows : this.cols;
+            let x;
+            let y;
+
+            for (let row = 0; row < linesCount; row++) {
+              for (let particle = 0; particle < particlesPerLine; particle++) {
+                let width = this.particleWidth;
+                y = this.particleHeight * row;
+
+                switch (this.transitionDirection) {
+                  case "Left-Right":
+                    x = (width + this.skewSizeAbs + width * particle) * -1 /* + this.w / 2 */;
+                    break;
+                  case "Right-Left":
+                    x = (this.w + this.skewSizeAbs) + (width * particle )/*  - this.w / 2 */;
+                    break;
+                  case "Up-Down":
+                    x = width * row;
+                    y = this.particleHeight * particle * -1 /* + this.h / 2 */;
+                    break;
+                  case "Bottom-up":
+                    x = width * row;
+                    y = this.h + this.particleHeight * particle /* - this.h / 2 */;
+                    break;
+                }
+
+                // let gradient = this.ctx.createLinearGradient(x - this.skewSizeAbs, y + this.particleHeight/2, x + width + this.skewSizeAbs, y + this.particleHeight/2);
+                // gradient.addColorStop(0, 'transparent');
+                // gradient.addColorStop(0.33, this.particlesColor);
+                // gradient.addColorStop(0.66, this.particlesColor);
+                // gradient.addColorStop(1, 'transparent');
+
+                this.particles.push({
+                  startXPosition: x,
+                  startYPosition: y,
+                  x: x,
+                  y: y,
+                  liveTime: this.images[this.currentImage].visibleTime,
+                  fill: 'rgba(255,255, 0,.5)',
+                  speed: Math.random() * (particlesPerLine - particle) * 150 + 100
+                });
+              }
+            }
+
+        } else if (this.animationType === 'Transition 3') {
+
+        }
+    }
+
+    drawParticles() {
+        if (this.animationType === 'Transition 1') {
+            this.particles.forEach(({ x, y, fill }, i) => {
+                if (fill !== 'transparent') {
+                    this.ctx.fillStyle = fill;
+                    this.ctx.beginPath();
+                    // TODO: DELETE AFTER DEBUG
+                    // if (i >= 0) {
+                    //     this.ctx.fillStyle = 'rgba(255, 0, 0, .5)';
+                    // }
+                    // TODO: DELETE AFTER DEBUG
+                    this.ctx.moveTo(x - this.skewSize, y);
+                    // +1 to fix spaces between particles
+                    this.ctx.lineTo(x + this.particleWidth - this.skewSize + 1, y);
+                    this.ctx.lineTo(x + this.particleWidth + 1, y + this.particleHeight + 1);
+                    this.ctx.lineTo(x, y + this.particleHeight + 1);
+                    this.ctx.closePath();
+                    this.ctx.fill();
+                }
+            });
+        } else if (this.animationType === 'Transition 2') {
+            this.particles.forEach(({ x, y, fill }, i) => {
+                if (fill !== 'transparent') {
+                    this.ctx.fillStyle = fill;
+                    this.ctx.beginPath();
+                    // TODO: DELETE AFTER DEBUG
+                    this.ctx.moveTo(x - this.skewSize, y);
+                    // +1 to fix spaces between particles
+                    this.ctx.lineTo(x + this.particleWidth - this.skewSize + 1, y);
+                    this.ctx.lineTo(x + this.particleWidth + 1, y + this.particleHeight + 1);
+                    this.ctx.lineTo(x, y + this.particleHeight + 1);
+                    this.ctx.closePath();
+                    this.ctx.fill();
+                }
+            });
+        } else if (this.animationType === 'Transition 3') {
+
+        }
+        
     }
 
     updateParticles() {
@@ -205,11 +354,11 @@ class myBanner {
             if (this.animationType === 'Transition 1') {
                 if (p.liveTime > (this.imageShowTime - this.transitionTime)) {
                     if (p.fill === 'transparent') {
-                        p.fill = Math.random() < 0.25 ? this.particlesColor : 'transparent';
+                        p.fill = Math.random() < 0.25 ? this.currentColor : 'transparent';
                     }
                     
                     if (p.liveTime > this.imageShowTime) {
-                        p.fill = Math.random() < 0.25 ? 'transparent' : this.particlesColor;
+                        p.fill = Math.random() < 0.25 ? 'transparent' : this.currentColor;
 
                         if (p.fill === 'transparent') {
                             p.liveTime = this.images[this.currentImage].visibleTime;
@@ -217,22 +366,21 @@ class myBanner {
                     }
                 }
             } else if (this.animationType === 'Transition 2') {
-                let finalSpeed = Math.random() * 150 + (p.speedReferencePoint + 1) * 50;
-                // let finalSpeed = 10;
-                let xStep = finalSpeed;
-                let yStep = finalSpeed;
+                let xStep = p.speed;
+                let yStep = p.speed;
                 let isOverEdge;
+                
 
                 // set values according to direction of the animation
                 switch (this.transitionDirection) {
                     case 'Left-Right':
                         yStep = 0;
-                        isOverEdge = p.x > this.w + this.skewSize;
+                        isOverEdge = p.x > this.w + this.skewSizeAbs;
                         break;
                     case 'Right-Left':
                         xStep *= -1;
                         yStep = 0;
-                        isOverEdge = p.x < (this.particleWidth + this.skewSize) * -1;
+                        isOverEdge = p.x < (this.particleWidth + this.skewSizeAbs) * -1;
                         break;
                     case 'Up-Down':
                         xStep = 0;
@@ -242,12 +390,13 @@ class myBanner {
                         xStep = 0;
                         yStep *= -1;
 
-                        isOverEdge = p.y < -this.particleHeight;
+                        isOverEdge = p.y < this.particleHeight * -1;
                         break;
                 }
 
                 // apply values
-                if (p.liveTime > (this.imageShowTime - (this.transitionTime * 2))) {
+                if (p.liveTime >= (this.imageShowTime - this.transitionTime)) {
+                    
                     p.x += xStep;
                     p.y += yStep;
 
@@ -255,65 +404,21 @@ class myBanner {
                         p.x = p.startXPosition;
                         p.y = p.startYPosition;
 
-                        if (p.liveTime >= this.imageShowTime) {
+                        if (p.liveTime >= this.imageShowTime - this.transitionTime) {
                             p.liveTime = this.images[this.currentImage].visibleTime;
                             // fill with color
-                            p.fill = (this.currentImage + 1) % 2 === 0 ? this.particlesColor2 : this.particlesColor;
+                            this.currentColor = (this.currentImage + 1) % 2 === 0 ? this.particlesColor2 : this.particlesColor;
+                            p.fill = this.currentColor;
                         }
                     }
+                } else {
+                    p.fill = 'transparent';
                 }
 
             } else if(this.animationType === 'Transition 3') {
 
             }
         });
-    }
-
-    drawImages() {
-        this.images.forEach((item, i) => {
-            if (item.opacity > 0) {
-                this.ctx.save();
-                this.ctx.globalAlpha = item.opacity;
-                //Show the images in a row
-                // this.ctx.drawImage(item.img, i* (this.w/this.images.length), 0, this.w/this.maxImages, this.h);
-                
-                this.ctx.drawImage(item.img, 0, 0, this.w, this.h);
-                
-                this.ctx.restore();
-            }
-        });
-    }
-
-    updateImages() {
-        let current = this.images[this.currentImage];
-        let next = this.images[(this.currentImage + 1) % this.images.length];
-
-        if (current.visibleTime <= 0) {
-            current.opacity = 1;
-        }
-
-        current.visibleTime += 1000 / this.frameRate; 
-
-        if (current.visibleTime >= (this.imageShowTime - this.transitionTime)) {
-
-            const changeOpacityStep = 1 / (this.transitionTime / (1000/this.frameRate));
-
-            if (current.opacity > 0) {
-                // hide current images
-                current.opacity -= changeOpacityStep;
-                current.opacity = current.opacity < 0 ? 0 : current.opacity;
-
-                // show next image
-                if (next.opacity < 1) {
-                    next.opacity += changeOpacityStep;
-                    next.opacity = next.opacity > 1 ? 1 : next.opacity;
-                }
-            } else {
-                current.visibleTime = 0;
-                this.currentImage++;
-                this.currentImage = this.currentImage % this.images.length;
-            }
-        }
     }
 
     draw() {
@@ -349,10 +454,9 @@ class myBanner {
     render() {
         if (!this.isPaused) {
             this.fixFrameRate();
-        
-        
-            this.update();
+            
             this.draw();
+            this.update();
         }
 
         
