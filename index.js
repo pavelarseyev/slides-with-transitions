@@ -100,9 +100,8 @@ class myBanner {
     }
 
     calculateShadowColor() {
-        // 'rgba(0,0,0,1)'
         let colorArray = this.currentColor.split(',');
-        let alpha = parseFloat(colorArray[colorArray.length -1].replace(/[^0-9.]/gi, '')) / 1.5;
+        let alpha = parseFloat(colorArray[colorArray.length -1].replace(/[^0-9.]/gi, '')) / 2;
         this.shadowColor = this.currentColor.replace(/(\d\))$/gi, `${alpha})`);
     }
 
