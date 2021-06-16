@@ -10,8 +10,8 @@ const Widget = {
         transitionTime: 20,
         animationType: 'Transition 2',
         transitionDirection: 'Left-Right',
-        particlesColor: 'rgb(0,255,0)',
-        particlesColor2: 'rgb(255,255,0)',
+        particlesColor: 'rgba(255,255,255, 1)',
+        particlesColor2: 'rgb(0,0,0, 1)',
         particlesPerColumn: 10,
         particlesPerRow: 10,
         skewSize: 1
@@ -37,6 +37,7 @@ class myBanner {
         this.particlesColor = options.particlesColor;
         this.particlesColor2 = options.particlesColor2;
         this.currentColor = this.particlesColor;
+        this.shadowColor = '';
         this.particles = [];
         // particles settings end
 
@@ -73,6 +74,7 @@ class myBanner {
 
         //wait until all images are loaded
         Promise.all(this.createImages(options)).then(() => {
+            this.calculateShadowColor();
             this.setupResize();
             this.createParticles();
             this.render();
@@ -95,6 +97,13 @@ class myBanner {
         this.skewSizeAbs = Math.abs(this.skewSize);
         this.particles = [];
         this.createParticles();
+    }
+
+    calculateShadowColor() {
+        // 'rgba(0,0,0,1)'
+        let colorArray = this.currentColor.split(',');
+        let alpha = parseFloat(colorArray[colorArray.length -1].replace(/[^0-9.]/gi, '')) / 1.5;
+        this.shadowColor = this.currentColor.replace(/(\d\))$/gi, `${alpha})`);
     }
 
     //TODO: add Widget.optimisedImageUrls
@@ -157,6 +166,19 @@ class myBanner {
 
             // draw second image
             this.ctx.save();
+            this.ctx.shadowOffsetX = -this.particleWidth + 5;
+            this.ctx.shadowOffsetY = 0;
+            this.ctx.shadowBlur = 15;
+            this.ctx.shadowColor = this.shadowColor;
+            this.ctx.fillStyle = 'none';
+            this.ctx.beginPath();
+            this.ctx.moveTo(clipTopXPoint + 5, 0);
+            this.ctx.lineTo(clipTopXPoint + this.particleWidth, 0);
+            this.ctx.lineTo(clipBottomXPoint + this.particleWidth, this.h);
+            this.ctx.lineTo(clipBottomXPoint + 5, this.h);
+            this.ctx.closePath();
+            this.ctx.fill();
+            
             // draw clip path 2
             this.ctx.beginPath();
             this.ctx.moveTo(clipTopXPoint, 0);
@@ -171,6 +193,10 @@ class myBanner {
                 this.ctx.drawImage(next.img, 0, 0, this.w, this.h);
             }
             this.ctx.restore();
+
+
+
+            // draw shadow 
 
         } else if (this.animationType === 'Transition 3') {
 
@@ -282,12 +308,6 @@ class myBanner {
                     break;
                 }
 
-                // let gradient = this.ctx.createLinearGradient(x - this.skewSizeAbs, y + this.particleHeight/2, x + width + this.skewSizeAbs, y + this.particleHeight/2);
-                // gradient.addColorStop(0, 'transparent');
-                // gradient.addColorStop(0.33, this.particlesColor);
-                // gradient.addColorStop(0.66, this.particlesColor);
-                // gradient.addColorStop(1, 'transparent');
-
                 this.particles.push({
                   startXPosition: x,
                   startYPosition: y,
@@ -312,11 +332,6 @@ class myBanner {
                 if (fill !== 'transparent') {
                     this.ctx.fillStyle = fill;
                     this.ctx.beginPath();
-                    // TODO: DELETE AFTER DEBUG
-                    // if (i >= 0) {
-                    //     this.ctx.fillStyle = 'rgba(255, 0, 0, .5)';
-                    // }
-                    // TODO: DELETE AFTER DEBUG
                     this.ctx.moveTo(x - this.skewSize, y);
                     // +1 to fix spaces between particles
                     this.ctx.lineTo(x + this.particleWidth - this.skewSize + 1, y);
@@ -329,9 +344,9 @@ class myBanner {
         } else if (this.animationType === 'Transition 2') {
             this.particles.forEach(({ x, y, fill }, i) => {
                 if (fill !== 'transparent') {
+                    this.ctx.save();
                     this.ctx.fillStyle = fill;
                     this.ctx.beginPath();
-                    // TODO: DELETE AFTER DEBUG
                     this.ctx.moveTo(x - this.skewSize, y);
                     // +1 to fix spaces between particles
                     this.ctx.lineTo(x + this.particleWidth - this.skewSize + 1, y);
@@ -339,6 +354,7 @@ class myBanner {
                     this.ctx.lineTo(x, y + this.particleHeight + 1);
                     this.ctx.closePath();
                     this.ctx.fill();
+                    this.ctx.restore();
                 }
             });
         } else if (this.animationType === 'Transition 3') {
@@ -367,9 +383,9 @@ class myBanner {
                 let acceleration;
 
                 if (this.transitionDirection === 'Left-Right') {
-                    acceleration = Math.abs(p.x / this.w * (this.w * 0.1));
+                    acceleration = Math.abs(p.x / this.w * (this.w * 0.15));
                 } else if (this.transitionDirection === 'Right-Left') {
-                    acceleration = Math.abs(Math.abs(p.x / this.w - 1) * (this.w * 0.1));
+                    acceleration = Math.abs(Math.abs(p.x / this.w - 1) * (this.w * 0.15));
                 }
 
                 let xStep = p.speed + acceleration;
@@ -408,17 +424,21 @@ class myBanner {
                         p.x = p.startXPosition;
                         p.y = p.startYPosition;
 
+                        // uncomment in case if we want to move particles to the current position of clip line
+                        // if (p.liveTime > this.imageShowTime - (this.transitionTime / 2)) {
+                        //     p.x = this.currentClipPosition + this.skewSize * (p.row + 1);
+
+                        //     if (this.transitionDirection === 'Right-Left') {
+                        //         p.x -= this.particleWidth;
+                        //     }
+                        // }
+
                         if (p.liveTime >= this.imageShowTime) {
-                            p.x = this.currentClipPosition + this.skewSize * (p.row + 1);
-
-                            if (this.transitionDirection === 'Right-Left') {
-                                p.x -= this.particleWidth;
-                            }
-
                             p.liveTime = this.images[this.currentImage].visibleTime;
                             // p.liveTime = 0;
                             // fill with color
                             this.currentColor = (this.currentImage + 1) % 2 === 0 ? this.particlesColor2 : this.particlesColor;
+                            this.calculateShadowColor();
                             p.fill = this.currentColor;
                         }
                     }
@@ -540,14 +560,19 @@ function addSettings() {
     const imageShowTime = +document.getElementById('image-duration').value;
     const particlesPerRow = +document.getElementById('particles-per-row').value;
     const particlesPerColumn = +document.getElementById('particles-per-column').value;
-    const particlesColor = document.getElementById('particles-color').value;
-    const particlesColor2 = document.getElementById('particles-color2').value;
+    let particlesColor = document.getElementById('particles-color').value;
+    let particlesColor2 = document.getElementById('particles-color2').value;
     const skewSize = +document.getElementById('skew').value
     
     if (banner) {
         banner.destroy();
         banner = {};
     }
+
+    particlesColor = convertHexToRgbA(particlesColor, 1);
+    particlesColor2 = convertHexToRgbA(particlesColor2, 1);
+
+    console.log(particlesColor, particlesColor2);
 
     playBtn.classList.add('active');
     pauseBtn.classList.remove('active');
@@ -568,5 +593,21 @@ function addSettings() {
     banner = new myBanner({
         ...Widget.properties
     });
+}
+
+function convertHexToRgbA(hex, a) {
+              
+    // Convert the first 2 characters to hexadecimal
+    let r = parseInt(hex.substring(1, 3), 16),
+      
+    // Convert the middle 2 characters to hexadecimal
+    g = parseInt(hex.substring(3, 5), 16),
+          
+    // Convert the last 2 characters to hexadecimal
+    b = parseInt(hex.substring(5, 7), 16);
+          
+    // append them all
+    return "rgba(" + r + ", " + g + ", "
+            + b + ", " + a + ")";
 }
 //helpers end
