@@ -209,14 +209,14 @@ class myBanner {
                 }
             }
         } else if (this.animationType === 'Transition 2') {
-            if (current.visibleTime >= this.imageShowTime + this.transitionTime) {
+            if (current.visibleTime >= this.imageShowTime ) {
                 this.currentImage++;
                 this.currentImage = this.currentImage % this.images.length;
                 current.visibleTime = 0;
             }
 
-            if (current.visibleTime >= this.imageShowTime) {
-                let clipStep = (this.w + this.particleWidth + (this.skewSizeAbs * this.rows)) / (this.transitionTime / (1000 / this.frameRate));
+            if (current.visibleTime >= this.imageShowTime - (this.transitionTime / 3)) {
+                let clipStep = (this.w + this.particleWidth + (this.skewSizeAbs * this.rows)) / ((this.transitionTime / 3) / (1000 / this.frameRate));
 
                 if (this.transitionDirection === 'Left-Right') {
                     this.currentClipPosition += clipStep;
@@ -227,9 +227,10 @@ class myBanner {
                 if (this.transitionDirection === 'Left-Right') {
                     this.currentClipPosition = 0 - (this.particleWidth + this.skewSizeAbs * this.rows);
                 } else if (this.transitionDirection === 'Right-Left') {
-                    this.currentClipPosition = this.w;
+                    this.currentClipPosition = this.w + (this.particleWidth + this.skewSizeAbs * this.rows);
                 }
             }
+
         } else if (this.animationType === 'Transition 3') {
 
         }
@@ -255,14 +256,16 @@ class myBanner {
                 }
             }
         } else if (this.animationType === 'Transition 2') {
-            let particlesPerLine = 2;
-            let linesCount = this.animationType === 'Left-Right' || this.animationType === 'Right-left' ? this.rows : this.cols;
+            let particlesPerLine = 1;
+            let linesCount = (this.animationType === 'Left-Right' || this.animationType === 'Right-left') ?  this.cols : this.rows;
             let x;
             let y;
 
             for (let row = 0; row < linesCount; row++) {
               for (let particle = 0; particle < particlesPerLine; particle++) {
-                y = this.particleHeight * row;
+                    y = this.particleHeight * row;
+                    console.log('y coord: ', y);
+                    console.log('%s%d', 'particle height:', this.particleHeight);
 
                 switch (this.transitionDirection) {
                   case "Left-Right":
@@ -295,7 +298,7 @@ class myBanner {
                   row,
                   liveTime: this.images[this.currentImage].visibleTime,
                   fill: this.currentColor,
-                  speed: Math.random() * 100 + 10
+                  speed: (Math.random() * 50 + 10)
                 });
               }
             }
@@ -348,9 +351,6 @@ class myBanner {
 
     updateParticles() {
         this.particles.forEach((p, i) => {
-            /* start counting of particle lifetime */
-            p.liveTime += 1000 / this.frameRate;
-
             if (this.animationType === 'Transition 1') {
                 if (p.liveTime > (this.imageShowTime - this.transitionTime)) {
                     if (p.fill === 'transparent') {
@@ -366,10 +366,17 @@ class myBanner {
                     }
                 }
             } else if (this.animationType === 'Transition 2') {
-                let xStep = p.speed;
-                let yStep = p.speed;
+                let acceleration;
+
+                if (this.transitionDirection === 'Left-Right') {
+                    acceleration = Math.abs(p.x / this.w * (this.w * 0.1));
+                } else if (this.transitionDirection === 'Right-Left') {
+                    acceleration = Math.abs(Math.abs(p.x / this.w - 1) * (this.w * 0.1));
+                }
+
+                let xStep = p.speed + acceleration;
+                let yStep = p.speed + acceleration;
                 let isOverEdge;
-                
 
                 // set values according to direction of the animation
                 switch (this.transitionDirection) {
@@ -395,8 +402,7 @@ class myBanner {
                 }
 
                 // apply values
-                if (p.liveTime >= (this.imageShowTime - this.transitionTime)) {
-                    
+                if (p.liveTime >= this.imageShowTime - this.transitionTime) {
                     p.x += xStep;
                     p.y += yStep;
 
@@ -412,18 +418,20 @@ class myBanner {
                             }
 
                             p.liveTime = this.images[this.currentImage].visibleTime;
+                            // p.liveTime = 0;
                             // fill with color
                             this.currentColor = (this.currentImage + 1) % 2 === 0 ? this.particlesColor2 : this.particlesColor;
                             p.fill = this.currentColor;
                         }
                     }
-                } else {
-                    p.fill = 'transparent';
                 }
 
             } else if(this.animationType === 'Transition 3') {
 
             }
+
+            /* start counting of particle lifetime */
+            p.liveTime += 1000 / this.frameRate;
         });
     }
 
@@ -485,6 +493,7 @@ const checkBox = document.getElementById('toggler');
 const playBtn = document.getElementById('play');
 const pauseBtn = document.getElementById('pause');
 let myEv = new Event('settings-changed');
+let paused = false;
 
 window.addEventListener('settings-changed', addSettings);
 
@@ -507,6 +516,16 @@ pauseBtn.addEventListener('click', () => {
 
 checkBox.addEventListener('change', (e) => e.stopPropagation());
 settings.addEventListener('change', () => {window.dispatchEvent(myEv)});
+window.addEventListener('keypress', (e) => {
+    if (e.code === 'Space') {
+        paused = !paused;
+        if (paused) {
+            pauseBtn.click();
+        } else {
+            playBtn.click();
+        }
+    }
+})
 
 
 
