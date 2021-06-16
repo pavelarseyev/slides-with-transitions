@@ -264,8 +264,6 @@ class myBanner {
             for (let row = 0; row < linesCount; row++) {
               for (let particle = 0; particle < particlesPerLine; particle++) {
                     y = this.particleHeight * row;
-                    console.log('y coord: ', y);
-                    console.log('%s%d', 'particle height:', this.particleHeight);
 
                 switch (this.transitionDirection) {
                   case "Left-Right":
@@ -334,9 +332,9 @@ class myBanner {
                     this.ctx.fillStyle = fill;
                     this.ctx.beginPath();
                     // TODO: DELETE AFTER DEBUG
-                    this.ctx.moveTo(x - this.skewSizeAbs, y);
+                    this.ctx.moveTo(x - this.skewSize, y);
                     // +1 to fix spaces between particles
-                    this.ctx.lineTo(x + this.particleWidth - this.skewSizeAbs + 1, y);
+                    this.ctx.lineTo(x + this.particleWidth - this.skewSize + 1, y);
                     this.ctx.lineTo(x + this.particleWidth + 1, y + this.particleHeight + 1);
                     this.ctx.lineTo(x, y + this.particleHeight + 1);
                     this.ctx.closePath();
