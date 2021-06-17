@@ -20,7 +20,6 @@ const Widget = {
 
 class myBanner {
     constructor(options) {
-        // this.time = 0;
         this.frameRate = 60;
         this.startTime = new Date().getTime();
         this.framesPerSecond = 0;
@@ -106,7 +105,7 @@ class myBanner {
     }
 
     changeCurrentImageOnLoop(current) {
-        if (current.visibleTime >= this.imageShowTime) {
+        if (current.visibleTime > this.imageShowTime) {
             this.currentImage++;
             this.currentImage = this.currentImage % this.images.length;
             current.visibleTime = 0;
@@ -141,11 +140,10 @@ class myBanner {
         let next = this.images[(this.currentImage + 1) % this.images.length];
 
         if (this.animationType === 'Transition 1') {
-            [current, next].forEach((image, i) => {
+            [current, next].forEach((images) => {
                 this.ctx.save();
                 this.ctx.globalAlpha = image.opacity;
                 //Show the images in a row
-                // this.ctx.drawImage(image.img, i* (this.w/this.images.length), 0, this.w/this.maxImages, this.h);
                 
                 this.ctx.drawImage(image.img, 0, 0, this.w, this.h);
                 this.ctx.restore();
@@ -204,7 +202,7 @@ class myBanner {
             this.ctx.restore();
 
         } else if (this.animationType === 'Transition 3') {
-            this.ctx.drawImage(current.img, 0, 0, this.w, this.h);
+           
         }
     }
 
@@ -218,11 +216,6 @@ class myBanner {
             }
 
             this.changeCurrentImageOnLoop(current);
-            // if (current.visibleTime >= this.imageShowTime) {
-            //     this.currentImage++;
-            //     this.currentImage = this.currentImage % this.images.length;
-            //     current.visibleTime = 0;
-            // }
 
             if (current.visibleTime >= (this.imageShowTime - this.transitionTime)) {
 
@@ -260,7 +253,7 @@ class myBanner {
             }
 
         } else if (this.animationType === 'Transition 3') {
-            this.changeCurrentImageOnLoop(current);
+            // this.changeCurrentImageOnLoop(current);
         }
 
         current.visibleTime += 1000 / (this.frameRate);
@@ -326,17 +319,16 @@ class myBanner {
         } else if (this.animationType === 'Transition 3') {
             for (let row = 0; row < this.rows; row++) {
                 for (let col = 0; col < this.cols; col++) {
-                    // let offset = 30 * col/2 * this.ratio; 
-                    let offset = 0;
-                    // let x = ((this.particleWidth + offset) * col) + offset;
-                    let x = this.particleWidth * col - this.w/2;
+                    let offset = 30 * col/2 * this.ratio; 
+                    // let offset = 0;
+                    // let x = ((this.particleWidth + offset) * col) + offset;   
+                    let x = this.particleWidth * col - this.w;
                     let y = this.particleHeight * row;
                     
                     if (this.transitionDirection === 'Left-Right') {
-                        // x += this.w;
-                        // console.log(x);
+                        // x -= (offset * col) + offset + this.w;
                     } else if (this.transitionDirection === 'Right-Left') {
-                        
+                        // x += this.w;
                     }
 
                     this.particles.push({
@@ -347,7 +339,7 @@ class myBanner {
                         col, 
                         row,
                         offset,
-                        liveTime: this.images[this.currentImage].visibleTime
+                        liveTime: 0
                     });
                 }
             }
@@ -370,25 +362,25 @@ class myBanner {
                 }
             });
         } else if (this.animationType === 'Transition 3') {
-            let nextImage = this.images[(this.currentImage + 1) % this.images.length]
+            let current = this.images[this.currentImage];
+            let next = this.images[(this.currentImage + 1) % this.images.length];
+
+            this.ctx.drawImage(current.img, 0, 0, this.w, this.h);
 
             this.particles.forEach((p, i) => {
+                let skew = Math.abs(Math.abs(p.startXPosition - p.x) / this.w) / 2; 
+
                 this.ctx.save();
-                // let leftOffset = Math.min(Math.max(0, p.x), this.w);
-               
-                // this.ctx.transform(1, 0, 0.5, 1, 0, 0);
-                let rightOffset = this.w - (p.x + this.particleWidth);
-                let skew = ((this.w - p.x) + rightOffset) /  this.w - 0.5;
-                
-                this.ctx.transform(1, 0, 0, 1, 0, 0);
+                this.ctx.transform(1, 0, -0.5 + skew, 1, 0, 0);
                 this.ctx.beginPath();
                 this.ctx.moveTo(p.x, p.y);
                 this.ctx.lineTo(p.x + this.particleWidth + 1, p.y);
                 this.ctx.lineTo(p.x + this.particleWidth + 1, p.y + this.particleHeight + 1);
                 this.ctx.lineTo(p.x, p.y + this.particleHeight + 1);
+                this.ctx.closePath();
                 this.ctx.clip();
                
-                this.ctx.drawImage(nextImage.img, p.x - (this.particleWidth * p.col), p.y - (this.particleHeight * p.row), this.w, this.h);
+                this.ctx.drawImage(next.img, p.x - (this.particleWidth * p.col), p.y - (this.particleHeight * p.row), this.w, this.h);
                 this.ctx.restore();
             });
         }
@@ -475,12 +467,16 @@ class myBanner {
                         }
                     }
                 }
-
             } else if(this.animationType === 'Transition 3') {
-                p.x += 4;
-                // if (p.x >= this.w) {
-                //     p.x = 0;
-                // }
+                 if (p.liveTime >= this.imageShowTime - this.transitionTime) {
+                    p.x += this.w / (this.transitionTime / (1000 / this.frameRate));
+
+                    if (p.liveTime >= this.imageShowTime) {
+                        p.x = p.startXPosition;
+                        p.liveTime = 0;
+                        this.changeCurrentImageOnLoop(this.images[this.currentImage]);
+                    }
+                }
             }
 
             /* start counting of particle lifetime */
@@ -491,7 +487,7 @@ class myBanner {
     draw() {
         this.clear();
         this.drawImages();
-        this.drawParticles();
+        this.drawParticles(); 
     }
 
     update() {
