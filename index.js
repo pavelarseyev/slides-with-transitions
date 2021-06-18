@@ -100,7 +100,7 @@ class myBanner {
 
     calculateShadowColor() {
         let colorArray = this.currentColor.split(',');
-        let alpha = parseFloat(colorArray[colorArray.length -1].replace(/[^0-9.]/gi, '')) / 2;
+        let alpha = parseFloat(colorArray[colorArray.length - 1].replace(/[^0-9.]/gi, '')) / 2;
         this.shadowColor = this.currentColor.replace(/(\d\))$/gi, `${alpha})`);
     }
 
@@ -317,29 +317,38 @@ class myBanner {
             }
 
         } else if (this.animationType === 'Transition 3') {
+            let timeOffsetPerRow = this.transitionTime / this.rows;
+
+
             for (let row = 0; row < this.rows; row++) {
                 for (let col = 0; col < this.cols; col++) {
-                    let offset = 30 * col/2 * this.ratio; 
-                    // let offset = 0;
-                    // let x = ((this.particleWidth + offset) * col) + offset;   
-                    let x = this.particleWidth * col - this.w;
+                    let x = this.particleWidth * col;
                     let y = this.particleHeight * row;
+                    let timeOffsetRow = timeOffsetPerRow * ((this.rows-1) - row);
+                    // let currentRowTimeOffset = timeOffsetPerRow * ((this.rows - 1) - row);
+                    // let currentColumnTimeOffset = timeOffsetPerColumn * col;
+
+                    console.log(timeOffsetRow);
                     
+                    let path = this.w;
+
                     if (this.transitionDirection === 'Left-Right') {
-                        // x -= (offset * col) + offset + this.w;
+                        x -= path;
                     } else if (this.transitionDirection === 'Right-Left') {
-                        // x += this.w;
+                        x += path;
                     }
 
                     this.particles.push({
                         startXPosition: x,
                         startYPosition: y,
+                        path,
                         x,
                         y,
-                        col, 
                         row,
-                        offset,
-                        liveTime: 0
+                        col,
+                        timeOffsetRow,
+                        liveTime: 0,
+                        rowLiveTime: 0,
                     });
                 }
             }
@@ -365,19 +374,27 @@ class myBanner {
             let current = this.images[this.currentImage];
             let next = this.images[(this.currentImage + 1) % this.images.length];
 
-            this.ctx.drawImage(current.img, 0, 0, this.w, this.h);
+            // this.ctx.drawImage(current.img, 0, 0, this.w, this.h);
 
             this.particles.forEach((p, i) => {
-                let skew = Math.abs(Math.abs(p.startXPosition - p.x) / this.w) / 2; 
+                // let skew = Math.abs(Math.abs(p.path - p.x) / this.w) / 2; 
+
+                // if (i === 0) {
+                //     console.log(Math.abs(p.x - p.path));
+                // }
 
                 this.ctx.save();
-                this.ctx.transform(1, 0, -0.5 + skew, 1, 0, 0);
+                this.ctx.fillStyle = 'rgba(255,0,0, .5)';
+                // this.ctx.translate(this.particleWidth/2, this.particleHeight/2);
+                // this.ctx.transform(1, 0, -0.5 + skew, 1, 0, 0);
+                // this.ctx.translate(-this.particleWidth/, -this.particleHeight);
                 this.ctx.beginPath();
                 this.ctx.moveTo(p.x, p.y);
                 this.ctx.lineTo(p.x + this.particleWidth + 1, p.y);
                 this.ctx.lineTo(p.x + this.particleWidth + 1, p.y + this.particleHeight + 1);
                 this.ctx.lineTo(p.x, p.y + this.particleHeight + 1);
                 this.ctx.closePath();
+                this.ctx.fill();
                 this.ctx.clip();
                
                 this.ctx.drawImage(next.img, p.x - (this.particleWidth * p.col), p.y - (this.particleHeight * p.row), this.w, this.h);
@@ -459,7 +476,6 @@ class myBanner {
 
                         if (p.liveTime >= this.imageShowTime) {
                             p.liveTime = this.images[this.currentImage].visibleTime;
-                            // p.liveTime = 0;
                             // fill with color
                             this.currentColor = (this.currentImage + 1) % 2 === 0 ? this.particlesColor2 : this.particlesColor;
                             this.calculateShadowColor();
@@ -468,14 +484,29 @@ class myBanner {
                     }
                 }
             } else if(this.animationType === 'Transition 3') {
-                 if (p.liveTime >= this.imageShowTime - this.transitionTime) {
-                    p.x += this.w / (this.transitionTime / (1000 / this.frameRate));
 
-                    if (p.liveTime >= this.imageShowTime) {
-                        p.x = p.startXPosition;
-                        p.liveTime = 0;
-                        this.changeCurrentImageOnLoop(this.images[this.currentImage]);
+                // livetime point depending on time offset
+                if (p.liveTime - p.timeOffsetRow >= this.imageShowTime - this.transitionTime) {
+                    // start moving
+                    const xStep = p.path / (this.transitionTime / (1000 / this.frameRate));
+                    let acc = 0;
+                    
+
+                    if (this.transitionDirection === 'Left-Right') {
+                        // acc = (p.path - (p.path - (p.x + this.particleWidth))) * (this.w * 0.15);
+                        p.x += xStep + acc;
+                    } else if (this.transitionDirection === 'Right-Left') {
+                        // p.x -= xStep;
                     }
+                    
+
+                    // end moving
+                    // if (p.liveTime - p.rowTimeOffset >= this.imageShowTime) {
+                    //     p.y = p.startYPosition;
+                    //     p.x = p.startXPosition;
+                    //     p.liveTime = 0;
+                    //     this.changeCurrentImageOnLoop(this.images[this.currentImage]);
+                    // }
                 }
             }
 
