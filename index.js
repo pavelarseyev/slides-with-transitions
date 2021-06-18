@@ -491,17 +491,20 @@ class myBanner {
                     const xStep = p.path / (this.transitionTime / (1000 / this.frameRate));
                     let acc = 0;
                     
-
                     if (this.transitionDirection === 'Left-Right') {
                         // acc = (p.path - (p.path - (p.x + this.particleWidth))) * (this.w * 0.15);
-                        p.x += xStep + acc;
+
+                        if (/* p.liveTime - p.timeOffsetRow <= this.imageShowTime &&  */(p.x + this.particleWidth) + ((this.cols - 1) - p.col) * this.particleWidth <= p.path) {
+                            p.x += xStep + acc;
+                        } 
+                        
                     } else if (this.transitionDirection === 'Right-Left') {
                         // p.x -= xStep;
                     }
                     
 
                     // end moving
-                    // if (p.liveTime - p.rowTimeOffset >= this.imageShowTime) {
+                    // if (p.liveTime - p.timeOffsetRow >= this.imageShowTime) {
                     //     p.y = p.startYPosition;
                     //     p.x = p.startXPosition;
                     //     p.liveTime = 0;
