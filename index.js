@@ -70,6 +70,7 @@ class myBanner {
 
         this.isPaused = false;
         this.loop = null;
+        this.timeout;
 
         //wait until all images are loaded
         Promise.all(this.createImages(options)).then(() => {
@@ -87,15 +88,19 @@ class myBanner {
 
     //update dimensions
     resize() {
-        this.ratio = window.devicePixelRatio;
-        this.w = this.canvas.width = this.container.offsetWidth * this.ratio;
-        this.h = this.canvas.height = this.container.offsetHeight * this.ratio;
-        this.particleWidth = this.w / this.cols;
-        this.particleHeight = this.h / this.rows;
-        this.skewSize = this.particleWidth * this.skewPercent;
-        this.skewSizeAbs = Math.abs(this.skewSize);
-        this.particles = [];
-        this.createParticles();
+        clearTimeout(this.timeout);
+
+        this.timeout = setTimeout(() => {
+            this.ratio = window.devicePixelRatio;
+            this.w = this.canvas.width = this.container.offsetWidth * this.ratio;
+            this.h = this.canvas.height = this.container.offsetHeight * this.ratio;
+            this.particleWidth = this.w / this.cols;
+            this.particleHeight = this.h / this.rows;
+            this.skewSize = this.particleWidth * this.skewPercent;
+            this.skewSizeAbs = Math.abs(this.skewSize);
+            this.particles = [];
+            this.createParticles();
+        }, 200);
     }
 
     calculateShadowColor() {
@@ -253,7 +258,7 @@ class myBanner {
             }
 
         } else if (this.animationType === 'Transition 3') {
-            // this.changeCurrentImageOnLoop(current);
+            
         }
 
         current.visibleTime += 1000 / (this.frameRate);
@@ -317,24 +322,22 @@ class myBanner {
             }
 
         } else if (this.animationType === 'Transition 3') {
-            let timeOffsetPerRow = this.transitionTime / this.rows;
-
-
+            let rowTime = this.transitionTime / this.rows;
+            
             for (let row = 0; row < this.rows; row++) {
+
                 for (let col = 0; col < this.cols; col++) {
                     let x = this.particleWidth * col;
                     let y = this.particleHeight * row;
-                    let timeOffsetRow = timeOffsetPerRow * ((this.rows-1) - row);
-                    // let currentRowTimeOffset = timeOffsetPerRow * ((this.rows - 1) - row);
-                    // let currentColumnTimeOffset = timeOffsetPerColumn * col;
+                    let rowTimeOffset = (rowTime / this.rows) * (this.rows - (row + 1));
+                    let colTimeOffset = (rowTime / this.cols) * col / 2;
 
-                    console.log(timeOffsetRow);
-                    
                     let path = this.w;
 
                     if (this.transitionDirection === 'Left-Right') {
                         x -= path;
                     } else if (this.transitionDirection === 'Right-Left') {
+                        colTimeOffset *= -1;
                         x += path;
                     }
 
@@ -342,13 +345,14 @@ class myBanner {
                         startXPosition: x,
                         startYPosition: y,
                         path,
+                        col,
+                        row,
                         x,
                         y,
-                        row,
-                        col,
-                        timeOffsetRow,
-                        liveTime: 0,
-                        rowLiveTime: 0,
+                        colTimeOffset: colTimeOffset,
+                        rowTimeOffset: rowTimeOffset,
+                        transitionTime: rowTime,
+                        liveTime: 0
                     });
                 }
             }
@@ -374,7 +378,7 @@ class myBanner {
             let current = this.images[this.currentImage];
             let next = this.images[(this.currentImage + 1) % this.images.length];
 
-            // this.ctx.drawImage(current.img, 0, 0, this.w, this.h);
+            this.ctx.drawImage(current.img, 0, 0, this.w, this.h);
 
             this.particles.forEach((p, i) => {
                 // let skew = Math.abs(Math.abs(p.path - p.x) / this.w) / 2; 
@@ -383,18 +387,15 @@ class myBanner {
                 //     console.log(Math.abs(p.x - p.path));
                 // }
 
-                this.ctx.save();
-                this.ctx.fillStyle = 'rgba(255,0,0, .5)';
-                // this.ctx.translate(this.particleWidth/2, this.particleHeight/2);
+                this.ctx.save(); 
+                // this.ctx.transform(1, 0, 0, 1, 0, 0);
                 // this.ctx.transform(1, 0, -0.5 + skew, 1, 0, 0);
                 // this.ctx.translate(-this.particleWidth/, -this.particleHeight);
                 this.ctx.beginPath();
                 this.ctx.moveTo(p.x, p.y);
-                this.ctx.lineTo(p.x + this.particleWidth + 1, p.y);
-                this.ctx.lineTo(p.x + this.particleWidth + 1, p.y + this.particleHeight + 1);
-                this.ctx.lineTo(p.x, p.y + this.particleHeight + 1);
-                this.ctx.closePath();
-                this.ctx.fill();
+                this.ctx.lineTo(p.x + this.particleWidth, p.y);
+                this.ctx.lineTo(p.x + this.particleWidth, p.y + this.particleHeight);
+                this.ctx.lineTo(p.x, p.y + this.particleHeight);
                 this.ctx.clip();
                
                 this.ctx.drawImage(next.img, p.x - (this.particleWidth * p.col), p.y - (this.particleHeight * p.row), this.w, this.h);
@@ -484,33 +485,34 @@ class myBanner {
                     }
                 }
             } else if(this.animationType === 'Transition 3') {
-
-                // livetime point depending on time offset
-                if (p.liveTime - p.timeOffsetRow >= this.imageShowTime - this.transitionTime) {
+                let localLiveTime = p.liveTime + p.rowTimeOffset + p.colTimeOffset;
+               
+                if (localLiveTime >= this.imageShowTime - this.transitionTime) {
                     // start moving
-                    const xStep = p.path / (this.transitionTime / (1000 / this.frameRate));
-                    let acc = 0;
+                    const xStep = p.path / (p.transitionTime / (1000 / this.frameRate));
                     
                     if (this.transitionDirection === 'Left-Right') {
-                        // acc = (p.path - (p.path - (p.x + this.particleWidth))) * (this.w * 0.15);
-
-                        if (/* p.liveTime - p.timeOffsetRow <= this.imageShowTime &&  */(p.x + this.particleWidth) + ((this.cols - 1) - p.col) * this.particleWidth <= p.path) {
-                            p.x += xStep + acc;
-                        } 
-                        
+                        if ((p.x + this.particleWidth) + this.particleWidth * ((this.cols - 1) - p.col) < p.path) {
+                            p.x += xStep;
+                        }
+                          
                     } else if (this.transitionDirection === 'Right-Left') {
-                        // p.x -= xStep;
+                        if (p.x > this.particleWidth * p.col) {
+                            p.x -= xStep;
+                        }
                     }
-                    
-
-                    // end moving
-                    // if (p.liveTime - p.timeOffsetRow >= this.imageShowTime) {
-                    //     p.y = p.startYPosition;
-                    //     p.x = p.startXPosition;
-                    //     p.liveTime = 0;
-                    //     this.changeCurrentImageOnLoop(this.images[this.currentImage]);
-                    // }
                 }
+
+                // if (i === 4) {
+                //     console.log(localLiveTime);
+                // }
+                
+                if (localLiveTime >= this.imageShowTime) {
+                    p.y = p.startYPosition;
+                    p.x = p.startXPosition;
+                    this.changeCurrentImageOnLoop(this.images[this.currentImage]);
+                    p.liveTime = this.images[this.currentImage].visibleTime;
+                } 
             }
 
             /* start counting of particle lifetime */
