@@ -485,7 +485,7 @@ class myBanner {
                     }
                 }
             } else if(this.animationType === 'Transition 3') {
-                let localLiveTime = p.liveTime + p.rowTimeOffset + p.colTimeOffset;
+                let localLiveTime = p.liveTime - (p.rowTimeOffset + p.colTimeOffset);
                
                 if (localLiveTime >= this.imageShowTime - this.transitionTime) {
                     // start moving
@@ -507,7 +507,7 @@ class myBanner {
                 //     console.log(localLiveTime);
                 // }
                 
-                if (localLiveTime >= this.imageShowTime) {
+                if (p.liveTime >= this.imageShowTime) {
                     p.y = p.startYPosition;
                     p.x = p.startXPosition;
                     this.changeCurrentImageOnLoop(this.images[this.currentImage]);
