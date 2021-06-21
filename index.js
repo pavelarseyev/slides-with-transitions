@@ -109,8 +109,14 @@ class myBanner {
         this.shadowColor = this.currentColor.replace(/(\d\))$/gi, `${alpha})`);
     }
 
-    changeCurrentImageOnLoop(current) {
-        if (current.visibleTime > this.imageShowTime) {
+    changeCurrentImageOnLoop(current, instantly) {
+        if (!instantly) {
+            if (current.visibleTime > this.imageShowTime) {
+                this.currentImage++;
+                this.currentImage = this.currentImage % this.images.length;
+                current.visibleTime = 0;
+            }
+        } else {
             this.currentImage++;
             this.currentImage = this.currentImage % this.images.length;
             current.visibleTime = 0;
@@ -145,7 +151,7 @@ class myBanner {
         let next = this.images[(this.currentImage + 1) % this.images.length];
 
         if (this.animationType === 'Transition 1') {
-            [current, next].forEach((images) => {
+            [current, next].forEach(image => {
                 this.ctx.save();
                 this.ctx.globalAlpha = image.opacity;
                 //Show the images in a row
@@ -270,7 +276,7 @@ class myBanner {
 
             for(let row = 0; row < this.rows; row++) {
                 for(let column = 0; column < this.cols + additionalColumns; column++) {
-                    let x = this.particleWidth * column - this.particleWidth*(additionalColumns/2) + (this.skewSizeAbs * row);
+                    let x = this.particleWidth * column - this.particleWidth*(additionalColumns/2) + (this.skewSize * row);
                     let y = this.particleHeight * row;
 
                     this.particles.push({
@@ -323,14 +329,13 @@ class myBanner {
 
         } else if (this.animationType === 'Transition 3') {
             let rowTime = this.transitionTime / this.rows;
-            
             for (let row = 0; row < this.rows; row++) {
 
                 for (let col = 0; col < this.cols; col++) {
                     let x = this.particleWidth * col;
                     let y = this.particleHeight * row;
                     let rowTimeOffset = (rowTime / this.rows) * (this.rows - (row + 1));
-                    let colTimeOffset = (rowTime / this.cols) * col / 2;
+                    let colTimeOffset = (rowTime / this.cols) * col;
 
                     let path = this.w;
 
@@ -425,9 +430,9 @@ class myBanner {
                 let acceleration;
 
                 if (this.transitionDirection === 'Left-Right') {
-                    acceleration = Math.abs(p.x / this.w * (this.w * 0.15));
+                    acceleration = Math.abs(p.x / this.w * (this.w * 0.20));
                 } else if (this.transitionDirection === 'Right-Left') {
-                    acceleration = Math.abs(Math.abs(p.x / this.w - 1) * (this.w * 0.15));
+                    acceleration = Math.abs(Math.abs(p.x / this.w - 1) * (this.w * 0.20));
                 }
 
                 let xStep = p.speed + acceleration;
@@ -463,8 +468,8 @@ class myBanner {
                     p.y += yStep;
 
                     if (isOverEdge) {
-                        p.x = p.startXPosition;
-                        p.y = p.startYPosition;
+                        p.x = p.startXPosition - 10;
+                        p.y = p.startYPosition - 10;
 
                         // uncomment in case if we want to move particles to the current position of clip line
                         // if (p.liveTime > this.imageShowTime - (this.transitionTime / 2)) {
@@ -485,7 +490,7 @@ class myBanner {
                     }
                 }
             } else if(this.animationType === 'Transition 3') {
-                let localLiveTime = p.liveTime - (p.rowTimeOffset + p.colTimeOffset);
+                let localLiveTime = p.liveTime + p.rowTimeOffset + p.colTimeOffset;
                
                 if (localLiveTime >= this.imageShowTime - this.transitionTime) {
                     // start moving
@@ -495,7 +500,15 @@ class myBanner {
                         if ((p.x + this.particleWidth) + this.particleWidth * ((this.cols - 1) - p.col) < p.path) {
                             p.x += xStep;
                         }
-                          
+                        
+                        if (i === this.particles.length - 1 && p.liveTime >= this.transitionTime + p.rowTimeOffset + p.colTimeOffset) {
+                            this.changeCurrentImageOnLoop(this.images[this.currentImage], true);
+                            this.particles.forEach(particle => {
+                                particle.y = particle.startYPosition;
+                                particle.x = particle.startXPosition;
+                                particle.liveTime = this.images[this.currentImage].visibleTime;
+                            });
+                        }
                     } else if (this.transitionDirection === 'Right-Left') {
                         if (p.x > this.particleWidth * p.col) {
                             p.x -= xStep;
@@ -507,12 +520,11 @@ class myBanner {
                 //     console.log(localLiveTime);
                 // }
                 
-                if (p.liveTime >= this.imageShowTime) {
-                    p.y = p.startYPosition;
-                    p.x = p.startXPosition;
-                    this.changeCurrentImageOnLoop(this.images[this.currentImage]);
-                    p.liveTime = this.images[this.currentImage].visibleTime;
-                } 
+                // if (p.liveTime >= this.imageShowTime) {
+                //     p.y = p.startYPosition;
+                //     p.x = p.startXPosition;
+                //     p.liveTime = this.images[this.currentImage].visibleTime;
+                // } 
             }
 
             /* start counting of particle lifetime */
