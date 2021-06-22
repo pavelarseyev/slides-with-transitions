@@ -269,11 +269,11 @@ class myBanner {
                 for(let column = 0; column < totalColumns; column++) {
                     let additinalColumnsOffset = this.particleWidth*(additionalColumns/2);
 
-                    let x = this.particleWidth * column - additinalColumnsOffset + (this.skewSize * row);
+                    let x = this.particleWidth * column - additinalColumnsOffset + (this.skewSize * (this.rows - row - 1));
                     let y = this.particleHeight * row;
                     let endXPosition = x;
                     let endYPosition = y;
-                    let path = this.w + this.particleWidth * (this.rows - row) + (this.skewSize * row) + additinalColumnsOffset;
+                    let path = this.w + this.particleWidth * (this.rows - row - 1);
                     let fill = 'transparent';
                     
                     if (this.animationType === 'Transition 3') {
@@ -281,13 +281,13 @@ class myBanner {
                         // move particles to start position outside of the screen;
 
                         if (this.transitionDirection === 'Left-Right') {
-                            path += this.particleWidth * ((totalColumns - 1) - column);
+                            path += (this.particleWidth + this.skewSizeAbs) * ((totalColumns - 1) - column);
 
-                            x -= path;
+                            // x -= path;
                         } else if (this.transitionDirection === 'Right-Left') {
-                            path += this.particleWidth * column;
+                            path += (this.particleWidth + this.skewSizeAbs) * column;
                             
-                            x += path;
+                            // x += path;
                         }
                     }
 
@@ -354,9 +354,9 @@ class myBanner {
                 if (fill !== 'transparent') {
                     this.ctx.fillStyle = fill;
                     this.ctx.beginPath();
-                    this.ctx.moveTo(x - this.skewSize, y);
+                    this.ctx.moveTo(x + this.skewSize, y);
                     // +1 to fix spaces between particles
-                    this.ctx.lineTo(x + this.particleWidth - this.skewSize + 1, y);
+                    this.ctx.lineTo(x + this.particleWidth + this.skewSize + 1, y);
                     this.ctx.lineTo(x + this.particleWidth + 1, y + this.particleHeight + 1);
                     this.ctx.lineTo(x, y + this.particleHeight + 1);
                     this.ctx.closePath();
@@ -365,25 +365,25 @@ class myBanner {
             });
         } else if (this.animationType === 'Transition 3') {
             if (this.debug) {
-                this.ctx.fillStyle = "#ffff00"; 
                 this.ctx.font = '24px sans-serif';
                 this.ctx.textAlign = "left";
                 this.ctx.textBaseline = "top";
             }
             
             this.particles.forEach(({x, y}, i) => { 
-                this.ctx.save();
+                // this.ctx.save();
                 this.ctx.fillStyle = 'rgba(255, 0,0, .5)';
                 this.ctx.beginPath();
-                this.ctx.moveTo(x - this.skewSize, y);
-                this.ctx.lineTo(x + this.particleWidth - this.skewSize + 1, y);
+                this.ctx.moveTo(x + this.skewSize, y);
+                this.ctx.lineTo(x + this.particleWidth + this.skewSize + 1, y);
                 this.ctx.lineTo(x + this.particleWidth + 1, y + this.particleHeight + 1);
                 this.ctx.lineTo(x, y + this.particleHeight + 1);
                 this.ctx.closePath();
                 this.ctx.fill();
-                this.ctx.restore();
+                // this.ctx.restore();
                 
                 if (this.debug) {
+                    this.ctx.fillStyle = "#ffff00"; 
                     this.ctx.font = '24px sans-serif'; 
                     this.ctx.fillText(`${i}`, x + 10, y + 10);  
                 }
