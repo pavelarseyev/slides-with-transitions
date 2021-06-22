@@ -19,7 +19,7 @@ const Widget = {
 }
 
 class myBanner {
-    constructor(options) {
+    constructor(options, debug) {
         this.frameRate = 60;
         this.startTime = new Date().getTime();
         this.framesPerSecond = 0;
@@ -68,13 +68,12 @@ class myBanner {
         this.currentClipPosition = 0;
         //set dimensions end
 
+        this.debug = debug;
         this.isPaused = false;
         this.loop = null;
-        this.timeout;
-        this.currentTime = 0;
 
         //wait until all images are loaded
-        Promise.all(this.createImages(options)).then(() => {
+        Promise.all(this.createImages(options)).then(async () => {
             this.calculateShadowColor();
             this.setupResize();
             this.createParticles();
@@ -89,19 +88,15 @@ class myBanner {
 
     //update dimensions
     resize() {
-        clearTimeout(this.timeout);
-
-        this.timeout = setTimeout(() => {
-            this.ratio = window.devicePixelRatio;
-            this.w = this.canvas.width = this.container.offsetWidth * this.ratio;
-            this.h = this.canvas.height = this.container.offsetHeight * this.ratio;
-            this.particleWidth = this.w / this.cols;
-            this.particleHeight = this.h / this.rows;
-            this.skewSize = this.particleWidth * this.skewPercent;
-            this.skewSizeAbs = Math.abs(this.skewSize);
-            this.particles = [];
-            this.createParticles();
-        }, 200);
+        this.ratio = window.devicePixelRatio;
+        this.w = this.canvas.width = this.container.offsetWidth * this.ratio;
+        this.h = this.canvas.height = this.container.offsetHeight * this.ratio;
+        this.particleWidth = this.w / this.cols;
+        this.particleHeight = this.h / this.rows;
+        this.skewSize = this.particleWidth * this.skewPercent;
+        this.skewSizeAbs = Math.abs(this.skewSize);
+        this.particles = [];
+        this.createParticles();
     }
 
     calculateShadowColor() {
@@ -151,12 +146,10 @@ class myBanner {
         let current = this.images[this.currentImage];
         let next = this.images[(this.currentImage + 1) % this.images.length];
 
-        if (this.animationType === 'Transition 1') {
+        if (this.animationType === 'Transition 1' || this.animationType === 'Transition 3') {
             [current, next].forEach(image => {
                 this.ctx.save();
                 this.ctx.globalAlpha = image.opacity;
-                //Show the images in a row
-                
                 this.ctx.drawImage(image.img, 0, 0, this.w, this.h);
                 this.ctx.restore();
             });
@@ -213,8 +206,6 @@ class myBanner {
             }
             this.ctx.restore();
 
-        } else if (this.animationType === 'Transition 3') {
-           
         }
     }
 
@@ -222,7 +213,7 @@ class myBanner {
         let current = this.images[this.currentImage];
         let next = this.images[(this.currentImage + 1) % this.images.length];
 
-        if (this.animationType === 'Transition 1') {
+        if (this.animationType === 'Transition 1' || this.animationType === 'Transition 3') {
             if (current.visibleTime <= 0) {
                 current.opacity = 1;
             }
@@ -264,27 +255,53 @@ class myBanner {
                 }
             }
 
-        } else if (this.animationType === 'Transition 3') {
-            
         }
 
         current.visibleTime += 1000 / (this.frameRate);
     }
 
     createParticles() {
-        if (this.animationType === 'Transition 1') {
+        if (this.animationType === 'Transition 1' || this.animationType === 'Transition 3') {
             let additionalColumns = Math.ceil((this.skewSizeAbs * this.rows) / (this.particleWidth)) * 2;
+            let totalColumns = this.cols + additionalColumns;
 
             for(let row = 0; row < this.rows; row++) {
-                for(let column = 0; column < this.cols + additionalColumns; column++) {
-                    let x = this.particleWidth * column - this.particleWidth*(additionalColumns/2) + (this.skewSize * row);
+                for(let column = 0; column < totalColumns; column++) {
+                    let additinalColumnsOffset = this.particleWidth*(additionalColumns/2);
+
+                    let x = this.particleWidth * column - additinalColumnsOffset + (this.skewSize * row);
                     let y = this.particleHeight * row;
+                    let endXPosition = x;
+                    let endYPosition = y;
+                    let path = this.w + this.particleWidth * (this.rows - row) + (this.skewSize * row) + additinalColumnsOffset;
+                    let fill = 'transparent';
+                    
+                    if (this.animationType === 'Transition 3') {
+                        fill = this.currentColor;
+                        // move particles to start position outside of the screen;
+
+                        if (this.transitionDirection === 'Left-Right') {
+                            path += this.particleWidth * ((totalColumns - 1) - column);
+
+                            x -= path;
+                        } else if (this.transitionDirection === 'Right-Left') {
+                            path += this.particleWidth * column;
+                            
+                            x += path;
+                        }
+                    }
 
                     this.particles.push({
+                        endXPosition,
+                        endYPosition,
                         x: x,
                         y: y,
+                        path,
+                        row,
+                        totalColumns: totalColumns,
+                        col: column,
                         liveTime: this.images[this.currentImage].visibleTime,
-                        fill: 'transparent'
+                        fill
                     });
                 }
             }
@@ -328,40 +345,6 @@ class myBanner {
               }
             }
 
-        } else if (this.animationType === 'Transition 3') {
-            let rowTime = this.transitionTime / this.rows;
-            for (let row = 0; row < this.rows; row++) {
-
-                for (let col = 0; col < this.cols; col++) {
-                    let x = this.particleWidth * col;
-                    let y = this.particleHeight * row;
-                    let rowTimeOffset = (rowTime / this.rows) * (this.rows - (row + 1));
-                    let colTimeOffset = (rowTime / this.cols) * col;
-
-                    let path = this.w;
-
-                    if (this.transitionDirection === 'Left-Right') {
-                        x -= path;
-                    } else if (this.transitionDirection === 'Right-Left') {
-                        colTimeOffset *= -1;
-                        x += path;
-                    }
-
-                    this.particles.push({
-                        startXPosition: x,
-                        startYPosition: y,
-                        path,
-                        col,
-                        row,
-                        x,
-                        y,
-                        colTimeOffset: colTimeOffset,
-                        rowTimeOffset: rowTimeOffset,
-                        transitionTime: rowTime,
-                        liveTime: 0
-                    });
-                }
-            }
         }
     }
 
@@ -381,41 +364,31 @@ class myBanner {
                 }
             });
         } else if (this.animationType === 'Transition 3') {
-            let current = this.images[this.currentImage];
-            let next = this.images[(this.currentImage + 1) % this.images.length];
-
-            this.ctx.drawImage(current.img, 0, 0, this.w, this.h);
-
-            this.particles.forEach((p, i) => {
-                // let skew = Math.abs(Math.abs(p.path - p.x) / this.w) / 2; 
-
-                // if (i === 0) {
-                //     console.log(Math.abs(p.x - p.path));
-                // }
-
-                this.ctx.save(); 
-                // this.ctx.transform(1, 0, 0, 1, 0, 0);
-                // this.ctx.transform(1, 0, -0.5 + skew, 1, 0, 0);
-                // this.ctx.translate(-this.particleWidth/, -this.particleHeight);
+            if (this.debug) {
+                this.ctx.fillStyle = "#ffff00"; 
+                this.ctx.font = '24px sans-serif';
+                this.ctx.textAlign = "left";
+                this.ctx.textBaseline = "top";
+            }
+            
+            this.particles.forEach(({x, y}, i) => { 
+                this.ctx.save();
+                this.ctx.fillStyle = 'rgba(255, 0,0, .5)';
                 this.ctx.beginPath();
-                this.ctx.moveTo(p.x, p.y);
-                this.ctx.lineTo(p.x + this.particleWidth, p.y);
-                this.ctx.lineTo(p.x + this.particleWidth, p.y + this.particleHeight);
-                this.ctx.lineTo(p.x, p.y + this.particleHeight);
-                this.ctx.clip();
-               
-                this.ctx.drawImage(next.img, p.x - (this.particleWidth * p.col), p.y - (this.particleHeight * p.row), this.w, this.h);
+                this.ctx.moveTo(x - this.skewSize, y);
+                this.ctx.lineTo(x + this.particleWidth - this.skewSize + 1, y);
+                this.ctx.lineTo(x + this.particleWidth + 1, y + this.particleHeight + 1);
+                this.ctx.lineTo(x, y + this.particleHeight + 1);
+                this.ctx.closePath();
+                this.ctx.fill();
                 this.ctx.restore();
+                
+                if (this.debug) {
+                    this.ctx.font = '24px sans-serif'; 
+                    this.ctx.fillText(`${i}`, x + 10, y + 10);  
+                }
             });
         }
-
-        //TODO: remove after debug
-        this.ctx.save();
-        this.ctx.font = '24px sans-serif';
-        this.ctx.fillStyle = "#ffffff";
-        this.ctx.fillText(`${this.currentTime.toFixed(2)}s`, 20, 50);
-        this.ctx.fill();
-        this.ctx.restore();
     }
 
     updateParticles() {
@@ -498,45 +471,26 @@ class myBanner {
                     }
                 }
             } else if(this.animationType === 'Transition 3') {
-                let localLiveTime = p.liveTime + p.rowTimeOffset + p.colTimeOffset;
-               
-                if (localLiveTime >= this.imageShowTime - this.transitionTime) {
-                    // TODO: remove after debug
-                    if (i === 0) {
-                        this.currentTime += (1000 / this.frameRate) / 1000; 
-                    }
+                let xStep = p.path / (this.transitionTime / (1000 / this.frameRate));
+
+                if (p.liveTime >= this.imageShowTime - this.transitionTime) {
                     // start moving
-                    const xStep = this.w / (this.transitionTime / (1000 / this.frameRate));
-                    
                     if (this.transitionDirection === 'Left-Right') {
-                        if ((p.x + this.particleWidth) + this.particleWidth * ((this.cols - 1) - p.col) < this.w) {
-                            p.x += xStep;
-                        }
-                        
-                        if (i === this.particles.length - 1 && p.liveTime >= this.transitionTime + p.rowTimeOffset + p.colTimeOffset) {
-                            // this.changeCurrentImageOnLoop(this.images[this.currentImage], true);
-                            // this.particles.forEach(particle => {
-                            //     particle.y = particle.startYPosition;
-                            //     particle.x = particle.startXPosition;
-                            //     particle.liveTime = this.images[this.currentImage].visibleTime;
-                            // });
+                        if (p.x !== p.endXPosition) {
+                            // p.x += xStep;
                         }
                     } else if (this.transitionDirection === 'Right-Left') {
-                        if (p.x > this.particleWidth * p.col) {
-                            p.x -= xStep;
+                        if (p.x !== p.endXPosition) {
+                            // p.x -= xStep;
                         }
                     }
-                }
 
-                // if (i === 4) {
-                //     console.log(localLiveTime);
-                // }
-                
-                // if (p.liveTime >= this.imageShowTime) {
-                //     p.y = p.startYPosition;
-                //     p.x = p.startXPosition;
-                //     p.liveTime = this.images[this.currentImage].visibleTime;
-                // } 
+                    if (p.liveTime >= this.imageShowTime) {
+                        // p.y = p.startYPosition;
+                        // p.x = p.startXPosition;
+                        p.liveTime = this.images[this.currentImage].visibleTime;
+                    }
+                }
             }
 
             /* start counting of particle lifetime */
@@ -682,7 +636,7 @@ function addSettings() {
 
     banner = new myBanner({
         ...Widget.properties
-    });
+    }, true);
 }
 
 function convertHexToRgbA(hex, a) {
