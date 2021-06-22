@@ -71,6 +71,7 @@ class myBanner {
         this.isPaused = false;
         this.loop = null;
         this.timeout;
+        this.currentTime = 0;
 
         //wait until all images are loaded
         Promise.all(this.createImages(options)).then(() => {
@@ -407,7 +408,14 @@ class myBanner {
                 this.ctx.restore();
             });
         }
-        
+
+        //TODO: remove after debug
+        this.ctx.save();
+        this.ctx.font = '24px sans-serif';
+        this.ctx.fillStyle = "#ffffff";
+        this.ctx.fillText(`${this.currentTime.toFixed(2)}s`, 20, 50);
+        this.ctx.fill();
+        this.ctx.restore();
     }
 
     updateParticles() {
@@ -493,21 +501,25 @@ class myBanner {
                 let localLiveTime = p.liveTime + p.rowTimeOffset + p.colTimeOffset;
                
                 if (localLiveTime >= this.imageShowTime - this.transitionTime) {
+                    // TODO: remove after debug
+                    if (i === 0) {
+                        this.currentTime += (1000 / this.frameRate) / 1000; 
+                    }
                     // start moving
-                    const xStep = p.path / (p.transitionTime / (1000 / this.frameRate));
+                    const xStep = this.w / (this.transitionTime / (1000 / this.frameRate));
                     
                     if (this.transitionDirection === 'Left-Right') {
-                        if ((p.x + this.particleWidth) + this.particleWidth * ((this.cols - 1) - p.col) < p.path) {
+                        if ((p.x + this.particleWidth) + this.particleWidth * ((this.cols - 1) - p.col) < this.w) {
                             p.x += xStep;
                         }
                         
                         if (i === this.particles.length - 1 && p.liveTime >= this.transitionTime + p.rowTimeOffset + p.colTimeOffset) {
-                            this.changeCurrentImageOnLoop(this.images[this.currentImage], true);
-                            this.particles.forEach(particle => {
-                                particle.y = particle.startYPosition;
-                                particle.x = particle.startXPosition;
-                                particle.liveTime = this.images[this.currentImage].visibleTime;
-                            });
+                            // this.changeCurrentImageOnLoop(this.images[this.currentImage], true);
+                            // this.particles.forEach(particle => {
+                            //     particle.y = particle.startYPosition;
+                            //     particle.x = particle.startXPosition;
+                            //     particle.liveTime = this.images[this.currentImage].visibleTime;
+                            // });
                         }
                     } else if (this.transitionDirection === 'Right-Left') {
                         if (p.x > this.particleWidth * p.col) {
