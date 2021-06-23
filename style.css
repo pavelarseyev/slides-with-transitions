@@ -20,7 +20,7 @@ canvas {
 
 .settings {
     position: fixed;
-    top: 10px;
+    top: 30px;
     right: 10px;
     z-index: 3;
     display: grid;
@@ -29,10 +29,24 @@ canvas {
     justify-content: flex-start;
     align-items: center;
     width: 200px;
-    max-height: calc(100vh - 20px);
+    max-height: calc(100vh - 40px);
     padding: 10px;
     background-color: rgba(255,255,255, .8);
     box-shadow: 0 0 10px 5px rgba(0,0,0,.1);
+}
+
+.debug-holder {
+    position: absolute;
+    bottom: calc(100% - 5px);
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    padding: 3px 10px;
+    line-height: 20px;
+    background: inherit;
+
 }
 
 .settings div {

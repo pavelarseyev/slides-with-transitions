@@ -264,26 +264,29 @@ class myBanner {
         if (this.animationType === 'Transition 1' || this.animationType === 'Transition 3') {
             let additionalColumns = Math.ceil((this.skewSizeAbs * this.rows) / (this.particleWidth)) * 2;
             let totalColumns = this.cols + additionalColumns;
+            let offsetStep = this.particleWidth * 2;
 
             for(let row = 0; row < this.rows; row++) {
                 for(let column = 0; column < totalColumns; column++) {
                     let additinalColumnsOffset = this.particleWidth * (additionalColumns/2);
 
-                    let x = this.particleWidth * column - additinalColumnsOffset + (this.skewSize * (this.rows - row - 1));
+                    let x = this.particleWidth * column - additinalColumnsOffset + (this.skewSizeAbs * (this.rows - row - 1));
                     let y = this.particleHeight * row;
                     let endXPosition = x;
                     let endYPosition = y;
-                    // let path = this.w + this.particleWidth * (this.rows - row - 1);
                     let path = 0;
+                    let rowOffset;
+                    let colOffset;
+                    let bothOffsets;
                     let fill = 'transparent';
                     
                     if (this.animationType === 'Transition 3') {
                         fill = this.currentColor;
                         // move particles to start position outside of the screen;
                         if (this.transitionDirection === 'Left-Right') {
-                            let rowOffset = this.particleWidth * (this.rows - row - 1);
-                            let colOffset = this.particleWidth * (totalColumns - column - 1);
-                            let bothOffsets = rowOffset + colOffset;
+                            rowOffset = offsetStep * (this.rows - row - 1);
+                            colOffset = offsetStep * (totalColumns - column - 1);
+                            bothOffsets = rowOffset + colOffset;
                             path = additinalColumnsOffset + bothOffsets + this.w;
                             
                             if (this.skewSize > 0) {
@@ -292,10 +295,13 @@ class myBanner {
 
                             x -= path;
                         } else if (this.transitionDirection === 'Right-Left') {
+                            rowOffset = offsetStep * row;
+                            colOffset = offsetStep * column;
+                            bothOffsets = rowOffset + colOffset;
 
-                            path = (this.w + additinalColumnsOffset + this.skewSizeAbs * (this.rows - 1 - row)) + (this.particleWidth * this.skewSizeAbs) * ((totalColumns - 1) - column);
+                            path = additinalColumnsOffset + bothOffsets + this.w;
                             
-                            x += Math.ceil(path);
+                            x += path;
                         }
                     }
 
@@ -511,8 +517,10 @@ class myBanner {
                             p.x += p.endXPosition - p.x;
                         }
                     } else if (this.transitionDirection === 'Right-Left') {
-                        if (p.x !== p.endXPosition) {
-                            // p.x -= xStep;
+                        if (p.x > p.endXPosition + xStep) {
+                            p.x -= xStep;
+                        } else {
+                            p.x -= p.x - p.endXPosition;
                         }
                     }
 
@@ -583,6 +591,7 @@ let banner;
 
 // helpers start
 const settings = document.getElementById('settings');
+const debugInput = document.getElementById('debug-input');
 const checkBox = document.getElementById('toggler');
 const playBtn = document.getElementById('play');
 const pauseBtn = document.getElementById('pause');
@@ -610,6 +619,12 @@ pauseBtn.addEventListener('click', () => {
 
 checkBox.addEventListener('change', (e) => e.stopPropagation());
 settings.addEventListener('change', () => {window.dispatchEvent(myEv)});
+debugInput.addEventListener('change', (e) => {
+    e.stopPropagation();
+    if (banner) {
+        banner.debug = debugInput.checked;
+    }
+});
 window.addEventListener('keypress', (e) => {
     if (e.code === 'Space') {
         paused = !paused;

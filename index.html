@@ -10,6 +10,12 @@
 <body>
     <div class="container">
         <div class="settings" id="settings">
+            <div class="debug-holder">
+                <label>
+                    <input type="checkbox" id="debug-input" checked/>
+                    Enable debug mode
+                </label>
+            </div>
             <input type="checkbox" id="toggler">
             <label for="toggler">Show settings</label>
 
@@ -27,8 +33,8 @@
     
                 <div>Transition direction (only for 2nd and 3rd transitions)</div>
                 <select id="direction">
-                    <option value="Right-Left" >Right-Left</option>
-                    <option value="Left-Right" selected>Left-Right</option>
+                    <option value="Right-Left" selected>Right-Left</option>
+                    <option value="Left-Right" >Left-Right</option>
                     <!-- <option value="Up-Down">Up-Down</option>
                     <option value="Bottom-Up">Bottom-up</option> -->
                     <!-- <option value="Center-Out">Center - Out</option>
