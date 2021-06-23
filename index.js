@@ -157,10 +157,10 @@ class myBanner {
             let clipTopXPoint;
             let clipBottomXPoint;
 
-            if (this.skewSize > 0) {
+            if (this.skewSize < 0) {
                 clipTopXPoint = this.currentClipPosition;
                 clipBottomXPoint = this.currentClipPosition + this.skewSizeAbs * this.rows;
-            } else if (this.skewSize < 0) {
+            } else if (this.skewSize > 0) {
                 clipTopXPoint = this.currentClipPosition + this.skewSizeAbs * this.rows;
                 clipBottomXPoint = this.currentClipPosition;
             } else {
@@ -298,7 +298,7 @@ class myBanner {
                             path += colOffset;
 
                             if (this.skewSize < 0) {
-
+                                path += this.skewSizeAbs;
                             }
                             
                             x += path;
@@ -365,65 +365,54 @@ class myBanner {
     }
 
     drawParticles() {
-        if (this.animationType === 'Transition 1' || this.animationType === 'Transition 2') {
-            this.particles.forEach(({ x, y, fill }, i) => {
-                if (fill !== 'transparent') {
-                    this.ctx.fillStyle = fill;
-                    
-                    this.ctx.beginPath();
-                    this.ctx.moveTo(x + this.skewSize, y);
-                    // +1 to fix spaces between particles
-                    this.ctx.lineTo(x + this.particleWidth + this.skewSize + 1, y);
-                    this.ctx.lineTo(x + this.particleWidth + 1, y + this.particleHeight + 1);
-                    this.ctx.lineTo(x, y + this.particleHeight + 1);
-                    this.ctx.closePath();
-                    this.ctx.fill();
-                }
-            });
-        } else if (this.animationType === 'Transition 3') {
-            if (this.debug) {
-                this.ctx.font = '24px sans-serif';
-                this.ctx.textAlign = "left";
-                this.ctx.textBaseline = "top";
-            }
+        if (this.debug) {
+            this.ctx.font = '24px sans-serif';
+            this.ctx.textAlign = "left";
+            this.ctx.textBaseline = "top";
+        }
 
-            if (this.debug) {
-                this.ctx.strokeStyle = 'yellow';
-            }
-            
-            this.particles.forEach(({x, y}, i) => { 
-                
-                this.ctx.fillStyle = 'rgba(255, 0,0, .5)';
+        if (this.debug) {
+            this.ctx.strokeStyle = 'yellow';
+        }
+
+        this.particles.forEach(({ x, y, fill }, i) => {
+            if (fill !== 'transparent') {
+                if (this.debug) {
+                    this.ctx.fillStyle = 'rgba(255, 0,0, .5)';
+                } else {
+                    this.ctx.fillStyle = fill;
+                }
+    
                 this.ctx.beginPath();
                 this.ctx.moveTo(x + this.skewSize, y);
+                // +1 to fix spaces between particles
                 this.ctx.lineTo(x + this.particleWidth + this.skewSize + 1, y);
                 this.ctx.lineTo(x + this.particleWidth + 1, y + this.particleHeight + 1);
                 this.ctx.lineTo(x, y + this.particleHeight + 1);
                 this.ctx.closePath();
                 this.ctx.fill();
+            }
+          
+            if (this.debug) {
+                this.ctx.stroke();
+                this.ctx.save();
+                this.ctx.beginPath();
+                this.ctx.strokeStyle = 'green';
+                this.ctx.lineWidth = 2;
+                this.ctx.moveTo(x, y);
+                this.ctx.lineTo(x + this.particleWidth, y);
+                this.ctx.lineTo(x + this.particleWidth, y + this.particleHeight);
+                this.ctx.lineTo(x, y + this.particleHeight);
+                this.ctx.closePath();
+                this.ctx.stroke();
+                this.ctx.restore();
 
-                if (this.debug) {
-                    this.ctx.stroke();
-                    this.ctx.save();
-                    this.ctx.beginPath();
-                    this.ctx.strokeStyle = 'green';
-                    this.ctx.lineWidth = 2;
-                    this.ctx.moveTo(x, y);
-                    this.ctx.lineTo(x + this.particleWidth, y);
-                    this.ctx.lineTo(x + this.particleWidth, y + this.particleHeight);
-                    this.ctx.lineTo(x, y + this.particleHeight);
-                    this.ctx.closePath();
-                    this.ctx.stroke();
-                    this.ctx.restore();
-                }
-                
-                if (this.debug) {
-                    this.ctx.fillStyle = "#ffff00"; 
-                    this.ctx.font = '24px sans-serif'; 
-                    this.ctx.fillText(`${i}`, x + 10, y + 10);  
-                }
-            });
-        }
+                this.ctx.fillStyle = "#ffff00"; 
+                this.ctx.font = '24px sans-serif'; 
+                this.ctx.fillText(`${i}`, x + 10, y + 10);
+            }
+
+        });
     }
 
     updateParticles() {
@@ -682,7 +671,7 @@ function addSettings() {
 
     banner = new myBanner({
         ...Widget.properties
-    }, true);
+    }, false);
 }
 
 function convertHexToRgbA(hex, a) {
