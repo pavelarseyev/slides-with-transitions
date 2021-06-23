@@ -267,31 +267,41 @@ class myBanner {
 
             for(let row = 0; row < this.rows; row++) {
                 for(let column = 0; column < totalColumns; column++) {
-                    let additinalColumnsOffset = this.particleWidth*(additionalColumns/2);
+                    let additinalColumnsOffset = this.particleWidth * (additionalColumns/2);
 
                     let x = this.particleWidth * column - additinalColumnsOffset + (this.skewSize * (this.rows - row - 1));
                     let y = this.particleHeight * row;
                     let endXPosition = x;
                     let endYPosition = y;
-                    let path = this.w + this.particleWidth * (this.rows - row - 1);
+                    // let path = this.w + this.particleWidth * (this.rows - row - 1);
+                    let path = 0;
                     let fill = 'transparent';
                     
                     if (this.animationType === 'Transition 3') {
                         fill = this.currentColor;
                         // move particles to start position outside of the screen;
-
                         if (this.transitionDirection === 'Left-Right') {
-                            path += (this.particleWidth + this.skewSizeAbs) * ((totalColumns - 1) - column);
-
-                            // x -= path;
-                        } else if (this.transitionDirection === 'Right-Left') {
-                            path += (this.particleWidth + this.skewSizeAbs) * column;
+                            let rowOffset = this.particleWidth * (this.rows - row - 1);
+                            let colOffset = this.particleWidth * (totalColumns - column - 1);
+                            let bothOffsets = rowOffset + colOffset;
+                            path = additinalColumnsOffset + bothOffsets + this.w;
                             
-                            // x += path;
+                            if (this.skewSize > 0) {
+                                path += this.skewSize + (this.skewSize * (this.rows - row - 1));
+                            }
+
+                            x -= path;
+                        } else if (this.transitionDirection === 'Right-Left') {
+
+                            path = (this.w + additinalColumnsOffset + this.skewSizeAbs * (this.rows - 1 - row)) + (this.particleWidth * this.skewSizeAbs) * ((totalColumns - 1) - column);
+                            
+                            x += path;
                         }
                     }
 
                     this.particles.push({
+                        startXPosition: x,
+                        startYPosition: y,
                         endXPosition,
                         endYPosition,
                         x: x,
@@ -353,6 +363,7 @@ class myBanner {
             this.particles.forEach(({ x, y, fill }, i) => {
                 if (fill !== 'transparent') {
                     this.ctx.fillStyle = fill;
+                    
                     this.ctx.beginPath();
                     this.ctx.moveTo(x + this.skewSize, y);
                     // +1 to fix spaces between particles
@@ -369,9 +380,13 @@ class myBanner {
                 this.ctx.textAlign = "left";
                 this.ctx.textBaseline = "top";
             }
+
+            if (this.debug) {
+                this.ctx.strokeStyle = 'yellow';
+            }
             
             this.particles.forEach(({x, y}, i) => { 
-                // this.ctx.save();
+                
                 this.ctx.fillStyle = 'rgba(255, 0,0, .5)';
                 this.ctx.beginPath();
                 this.ctx.moveTo(x + this.skewSize, y);
@@ -380,7 +395,21 @@ class myBanner {
                 this.ctx.lineTo(x, y + this.particleHeight + 1);
                 this.ctx.closePath();
                 this.ctx.fill();
-                // this.ctx.restore();
+
+                if (this.debug) {
+                    this.ctx.stroke();
+                    this.ctx.save();
+                    this.ctx.beginPath();
+                    this.ctx.strokeStyle = 'green';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.moveTo(x, y);
+                    this.ctx.lineTo(x + this.particleWidth, y);
+                    this.ctx.lineTo(x + this.particleWidth, y + this.particleHeight);
+                    this.ctx.lineTo(x, y + this.particleHeight);
+                    this.ctx.closePath();
+                    this.ctx.stroke();
+                    this.ctx.restore();
+                }
                 
                 if (this.debug) {
                     this.ctx.fillStyle = "#ffff00"; 
@@ -477,7 +506,7 @@ class myBanner {
                     // start moving
                     if (this.transitionDirection === 'Left-Right') {
                         if (p.x !== p.endXPosition) {
-                            // p.x += xStep;
+                            p.x += xStep;
                         }
                     } else if (this.transitionDirection === 'Right-Left') {
                         if (p.x !== p.endXPosition) {
@@ -486,8 +515,8 @@ class myBanner {
                     }
 
                     if (p.liveTime >= this.imageShowTime) {
-                        // p.y = p.startYPosition;
-                        // p.x = p.startXPosition;
+                        p.y = p.startYPosition;
+                        p.x = p.startXPosition;
                         p.liveTime = this.images[this.currentImage].visibleTime;
                     }
                 }
