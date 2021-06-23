@@ -63,7 +63,7 @@ class myBanner {
         this.particleWidth = this.w / this.cols;
         this.particleHeight = this.h / this.rows;
         this.skewPercent = options.skewSize / 10;
-        this.skewSize = this.particleWidth * this.skewPercent;
+        this.skewSize = Math.floor(this.particleWidth * this.skewPercent);
         this.skewSizeAbs = Math.abs(this.skewSize);
         this.currentClipPosition = 0;
         //set dimensions end
@@ -295,7 +295,7 @@ class myBanner {
 
                             path = (this.w + additinalColumnsOffset + this.skewSizeAbs * (this.rows - 1 - row)) + (this.particleWidth * this.skewSizeAbs) * ((totalColumns - 1) - column);
                             
-                            x += path;
+                            x += Math.ceil(path);
                         }
                     }
 
@@ -504,9 +504,11 @@ class myBanner {
 
                 if (p.liveTime >= this.imageShowTime - this.transitionTime) {
                     // start moving
-                    if (this.transitionDirection === 'Left-Right') {
-                        if (p.x !== p.endXPosition) {
+                    if (this.transitionDirection === 'Left-Right') {                        
+                        if (p.x < p.endXPosition - xStep) {
                             p.x += xStep;
+                        } else {
+                            p.x += p.endXPosition - p.x;
                         }
                     } else if (this.transitionDirection === 'Right-Left') {
                         if (p.x !== p.endXPosition) {
@@ -515,8 +517,8 @@ class myBanner {
                     }
 
                     if (p.liveTime >= this.imageShowTime) {
-                        p.y = p.startYPosition;
-                        p.x = p.startXPosition;
+                        // p.y = p.startYPosition;
+                        // p.x = p.startXPosition;
                         p.liveTime = this.images[this.currentImage].visibleTime;
                     }
                 }

@@ -23,8 +23,11 @@ canvas {
     top: 10px;
     right: 10px;
     z-index: 3;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto 1fr;
+    justify-content: flex-start;
+    align-items: center;
     width: 200px;
     max-height: calc(100vh - 20px);
     padding: 10px;
@@ -47,6 +50,9 @@ input, select {
 
 [type="number"] {
     appearance: none;
+}
+[type="checkbox"] {
+    margin: 0 10px 0 0;
 }
 
 .buttons {
@@ -91,7 +97,9 @@ label {
 
 :checked ~ .settings-wrapper {
     display: block;
+    grid-column: span 2;
     height: 100%;
+    padding-right: 17px;
     overflow-y: auto;
 }
 
