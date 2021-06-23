@@ -268,38 +268,38 @@ class myBanner {
 
             for(let row = 0; row < this.rows; row++) {
                 for(let column = 0; column < totalColumns; column++) {
-                    let additinalColumnsOffset = this.particleWidth * (additionalColumns/2);
+                    let additionalColumnsOffset = this.particleWidth * (additionalColumns/2);
+                    let skewOffset = (this.skewSize * (this.rows - row - 1));
 
-                    let x = this.particleWidth * column - additinalColumnsOffset + (this.skewSizeAbs * (this.rows - row - 1));
+                    let x = this.particleWidth * column - additionalColumnsOffset + skewOffset;
                     let y = this.particleHeight * row;
                     let endXPosition = x;
                     let endYPosition = y;
-                    let path = 0;
-                    let rowOffset;
+                    let rowOffset = offsetStep * (this.rows - row - 1);
+                    let path = this.w + additionalColumnsOffset + rowOffset;
                     let colOffset;
-                    let bothOffsets;
                     let fill = 'transparent';
                     
                     if (this.animationType === 'Transition 3') {
                         fill = this.currentColor;
                         // move particles to start position outside of the screen;
                         if (this.transitionDirection === 'Left-Right') {
-                            rowOffset = offsetStep * (this.rows - row - 1);
                             colOffset = offsetStep * (totalColumns - column - 1);
-                            bothOffsets = rowOffset + colOffset;
-                            path = additinalColumnsOffset + bothOffsets + this.w;
-                            
+                            path += colOffset;
+
                             if (this.skewSize > 0) {
-                                path += this.skewSize + (this.skewSize * (this.rows - row - 1));
+                                path += this.skewSizeAbs + this.skewSize * (this.rows - row - 1);
                             }
 
                             x -= path;
                         } else if (this.transitionDirection === 'Right-Left') {
-                            rowOffset = offsetStep * row;
                             colOffset = offsetStep * column;
-                            bothOffsets = rowOffset + colOffset;
 
-                            path = additinalColumnsOffset + bothOffsets + this.w;
+                            path += colOffset;
+
+                            if (this.skewSize < 0) {
+
+                            }
                             
                             x += path;
                         }
