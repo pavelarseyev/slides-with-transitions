@@ -610,7 +610,7 @@ const checkBox = document.getElementById('toggler');
 const playBtn = document.getElementById('play');
 const pauseBtn = document.getElementById('pause');
 let myEv = new Event('settings-changed');
-let paused = false;
+let paused = true;
 
 window.addEventListener('settings-changed', addSettings);
 
@@ -678,8 +678,8 @@ function addSettings() {
     particlesColor2 = convertHexToRgbA(particlesColor2, 1);
 
 
-    playBtn.classList.add('active');
-    pauseBtn.classList.remove('active');
+    playBtn.classList.remove('active');
+    pauseBtn.classList.add('active');
 
     Widget.properties = {
         ...Widget.properties,
