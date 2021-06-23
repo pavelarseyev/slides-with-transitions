@@ -65,11 +65,10 @@ class myBanner {
         this.skewPercent = options.skewSize / 10;
         this.skewSize = Math.floor(this.particleWidth * this.skewPercent);
         this.skewSizeAbs = Math.abs(this.skewSize);
-        this.currentClipPosition = 0;
+        this.currentClipPosition = this.w * this.skewSize;
         //set dimensions end
-
         this.debug = debug;
-        this.isPaused = false;
+        this.isPaused = true;
         this.loop = null;
 
         //wait until all images are loaded
@@ -133,7 +132,7 @@ class myBanner {
                 img.src = options[`img${i+1}`];
                 this.images.push({
                     img,
-                    opacity: 0,
+                    opacity: i === 0 ? 1 : 0,
                     visibleTime: 0
                 });
             }));
@@ -342,23 +341,23 @@ class myBanner {
 
             for (let row = 0; row < linesCount; row++) {
               for (let particle = 0; particle < particlesPerLine; particle++) {
-                    y = this.particleHeight * row;
+                y = this.particleHeight * row;
 
                 switch (this.transitionDirection) {
-                  case "Left-Right":
-                    x = (this.particleWidth + this.skewSizeAbs + this.particleWidth * particle) * -1 /* + this.w / 2 */;
-                    break;
-                  case "Right-Left":
-                    x = (this.w + this.skewSizeAbs) + (this.particleWidth * particle )/*  - this.w / 2 */;
-                    break;
-                  case "Up-Down":
-                    x = this.particleWidth * row;
-                    y = this.particleHeight * particle * -1 /* + this.h / 2 */;
-                    break;
-                  case "Bottom-up":
-                    x = this.particleWidth * row;
-                    y = this.h + this.particleHeight * particle /* - this.h / 2 */;
-                    break;
+                    case "Left-Right":
+                        x = (this.particleWidth + this.skewSizeAbs + this.particleWidth * particle) * -1;
+                        break;
+                    case "Right-Left":
+                        x = (this.w + this.skewSizeAbs) + (this.particleWidth * particle );
+                        break;
+                    case "Up-Down":
+                        x = this.particleWidth * row;
+                        y = this.particleHeight * particle * -1;
+                        break;
+                    case "Bottom-up":
+                        x = this.particleWidth * row;
+                        y = this.h + this.particleHeight * particle;
+                        break;
                 }
 
                 this.particles.push({
@@ -369,7 +368,7 @@ class myBanner {
                   row,
                   liveTime: this.images[this.currentImage].visibleTime,
                   fill: this.currentColor,
-                  speed: (Math.random() * 50 + 10)
+                  speed: (Math.random() * 75 + 75)
                 });
               }
             }
@@ -450,10 +449,11 @@ class myBanner {
                 let acceleration;
 
                 if (this.transitionDirection === 'Left-Right') {
-                    acceleration = Math.abs(p.x / this.w * (this.w * 0.20));
+                    acceleration = Math.abs(p.x / this.w * p.speed) + 0.1;
                 } else if (this.transitionDirection === 'Right-Left') {
-                    acceleration = Math.abs(Math.abs(p.x / this.w - 1) * (this.w * 0.20));
+                    acceleration = Math.abs(Math.abs(p.x / this.w - 1) * p.speed) + 0.1;
                 }
+
 
                 let xStep = p.speed + acceleration;
                 let yStep = p.speed + acceleration;
@@ -492,13 +492,13 @@ class myBanner {
                         p.y = p.startYPosition - 10;
 
                         // uncomment in case if we want to move particles to the current position of clip line
-                        // if (p.liveTime > this.imageShowTime - (this.transitionTime / 2)) {
-                        //     p.x = this.currentClipPosition + this.skewSize * (p.row + 1);
+                        if (p.liveTime > this.imageShowTime - (this.transitionTime / 2)) {
+                            p.x = this.currentClipPosition + this.skewSize * (p.row + 1);
 
-                        //     if (this.transitionDirection === 'Right-Left') {
-                        //         p.x -= this.particleWidth;
-                        //     }
-                        // }
+                            if (this.transitionDirection === 'Right-Left') {
+                                p.x -= this.particleWidth;
+                            }
+                        }
 
                         if (p.liveTime >= this.imageShowTime) {
                             p.liveTime = this.images[this.currentImage].visibleTime;
@@ -582,10 +582,10 @@ class myBanner {
     }
 
     render() {
+        this.draw();
+
         if (!this.isPaused) {
-            this.fixFrameRate();
-            
-            this.draw();
+            this.fixFrameRate();    
             this.update();
         }
 
