@@ -335,7 +335,7 @@ class myBanner {
             }
         } else if (this.animationType === 'Transition 2') {
             let particlesPerLine = 1;
-            let linesCount = (this.animationType === 'Left-Right' || this.animationType === 'Right-left') ?  this.cols : this.rows;
+            let linesCount = (this.transitionDirection === 'Left-Right' || this.transitionDirection === 'Right-left') ? this.rows : this.cols;
             let x;
             let y;
 
@@ -694,9 +694,7 @@ function addSettings() {
         skewSize
     }
 
-    banner = new myBanner({
-        ...Widget.properties
-    }, false);
+    banner = new myBanner(Widget.properties, false);
 
     debugInput.checked = false;
 }
