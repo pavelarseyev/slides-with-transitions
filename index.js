@@ -68,7 +68,7 @@ class myBanner {
         this.currentClipPosition = this.w * this.skewSize;
         //set dimensions end
         this.debug = debug;
-        this.isPaused = true;
+        this.isPaused = false;
         this.loop = null;
 
         //wait until all images are loaded
@@ -209,11 +209,12 @@ class myBanner {
 
         if (this.debug) {
             this.ctx.save();
-            this.ctx.fillStyle = 'blue';
+            this.ctx.strokeStyle = 'blue';
+            this.ctx.lineWidth = 3;
             this.ctx.font = `${this.h / 6}px sans-serif`;
             let text = this.ctx.measureText("Image 1");
-            this.ctx.fillText(`Image ${this.currentImage}`, this.w/2 - text.width/2, this.h/2 - this.h / 12);
-            this.ctx.fill();
+            this.ctx.strokeText(`Image ${this.currentImage}`, this.w/2 - text.width/2, this.h/2 - this.h / 12);
+            this.ctx.stroke();
             this.ctx.restore();
         }
     }
