@@ -1,9 +1,13 @@
 const Widget = {
     properties: {
-        img1: `https://picsum.photos/id/${Math.floor(Math.random() * 50)}/300/300`,
-        img2: `https://picsum.photos/id/${Math.floor(Math.random() * 50)}/300/300`,
-        img3: `https://picsum.photos/id/${Math.floor(Math.random() * 50)}/300/300`,
-        img4: `https://picsum.photos/id/${Math.floor(Math.random() * 50)}/300/300`,
+        // img1: `https://picsum.photos/id/${Math.floor(Math.random() * 50)}/300/300`,
+        // img2: `https://picsum.photos/id/${Math.floor(Math.random() * 50)}/300/300`,
+        // img3: `https://picsum.photos/id/${Math.floor(Math.random() * 50)}/300/300`,
+        // img4: `https://picsum.photos/id/${Math.floor(Math.random() * 50)}/300/300`,
+        img1: `img1.png`,
+        img2: `img2.png`,
+        img3: `img3.png`,
+        img4: `img4.png`,
         //in seconds, default is 3
         imageShowTime: 3,
         // set the one tenth step, default is 1 second
@@ -44,7 +48,7 @@ class myBanner {
         this.imageShowTime = (+options.imageShowTime > 0 ? +options.imageShowTime * 1000 : 3000) + this.transitionTime;
         this.images = [];
         this.currentImage = 0;
-        this.maxImages = 4;
+        // this.maxImages = 4;
         //image options end
 
 
@@ -65,17 +69,30 @@ class myBanner {
         this.skewPercent = options.skewSize / 10;
         this.skewSize = Math.floor(this.particleWidth * this.skewPercent);
         this.skewSizeAbs = Math.abs(this.skewSize);
-        this.currentClipPosition = this.w * this.skewSize;
+        this.clipLine = {
+            startXPos: 0,
+            startYPos: 0,
+            endXPos: 0,
+            endYPos: 0,
+            currentXPos: 0,
+            currentYPos: 0,
+            clipTopXPoint: 0,
+            clipBottomXPoint: 0,
+            liveTime: 0
+        };
+
+
         //set dimensions end
         this.debug = debug;
         this.isPaused = false;
         this.loop = null;
 
         //wait until all images are loaded
-        Promise.all(this.createImages(options)).then(async () => {
+        Promise.all(this.createImages(options)).then(() => {
             this.calculateShadowColor();
             this.setupResize();
             this.createParticles();
+            this.createClipLine();
             this.render();
         });  
     }
@@ -96,6 +113,7 @@ class myBanner {
         this.skewSizeAbs = Math.abs(this.skewSize);
         this.particles = [];
         this.createParticles();
+        this.createClipLine();
     }
 
     calculateShadowColor() {
@@ -104,14 +122,8 @@ class myBanner {
         this.shadowColor = this.currentColor.replace(/(\d\))$/gi, `${alpha})`);
     }
 
-    changeCurrentImageOnLoop(current, instantly) {
-        if (!instantly) {
-            if (current.visibleTime > this.imageShowTime) {
-                this.currentImage++;
-                this.currentImage = this.currentImage % this.images.length;
-                current.visibleTime = 0;
-            }
-        } else {
+    changeCurrentImageOnLoop(current) {
+        if (current.visibleTime > this.imageShowTime) {
             this.currentImage++;
             this.currentImage = this.currentImage % this.images.length;
             current.visibleTime = 0;
@@ -121,22 +133,43 @@ class myBanner {
     //TODO: add Widget.optimisedImageUrls
     createImages(options) {
         const promiseArray = [];
+        const imgUrls = [];
 
-        for(let i = 0; i < this.maxImages; i++) {
+        if (options.img1) {
+            imgUrls.push(options.img1);
+        }
+        if (options.img2) {
+            imgUrls.push(options.img2);
+        }
+        if (options.img3) {
+            imgUrls.push(options.img3);
+        }
+        if (options.img4) {
+            imgUrls.push(options.img4);
+        }
+        imgUrls.forEach((url, i) => {
             promiseArray.push(new Promise((res, rej) => {
                 const img = document.createElement('img');
-                img.width = this.w;
-                img.height = this.h;
+                // img.width = this.w;
+                // img.height = this.h;
                 img.crossOrigin = 'Anonymous';
-                img.onload = res;
-                img.src = options[`img${i+1}`];
-                this.images.push({
-                    img,
-                    opacity: i === 0 ? 1 : 0,
-                    visibleTime: 0
-                });
+                img.onload = () => {
+                    document.body.appendChild(img);
+
+                    this.images.push({
+                        img,
+                        width: img.width,
+                        height: img.height,
+                        opacity: i === 0 ? 1 : 0,
+                        visibleTime: 0
+                    });
+
+                    img.remove();
+                    res();
+                };
+                img.src = url;
             }));
-        }
+        });
 
         return promiseArray;
     }
@@ -153,49 +186,47 @@ class myBanner {
                 this.ctx.restore();
             });
         } else if (this.animationType === 'Transition 2') {
-            let clipTopXPoint;
-            let clipBottomXPoint;
-
-            if (this.skewSize < 0) {
-                clipTopXPoint = this.currentClipPosition;
-                clipBottomXPoint = this.currentClipPosition + this.skewSizeAbs * this.rows;
-            } else if (this.skewSize > 0) {
-                clipTopXPoint = this.currentClipPosition + this.skewSizeAbs * this.rows;
-                clipBottomXPoint = this.currentClipPosition;
-            } else {
-                clipTopXPoint = clipBottomXPoint = this.currentClipPosition;
-            }
+            this.ctx.fillStyle = 'transparent';
 
             // draw firstImage
             // draw image 1
+            this.ctx.save();
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, 0);
+            this.ctx.lineTo(this.clipLine.clipTopXPoint, 0);
+            this.ctx.lineTo(this.clipLine.clipBottomXPoint, this.h);
+            this.ctx.lineTo(0, this.h);
+            this.ctx.clip();
+
             if (this.transitionDirection === 'Left-Right') {
                 this.ctx.drawImage(next.img, 0, 0, this.w, this.h);
             } else if (this.transitionDirection === 'Right-Left') {
                 this.ctx.drawImage(current.img, 0, 0, this.w, this.h);
             }
 
+            // this.ctx.shadowOffsetX = -this.particleWidth + 5;
+            // this.ctx.shadowOffsetY = 0;
+            // this.ctx.shadowBlur = 15;
+            // this.ctx.shadowColor = this.shadowColor;
+            // this.ctx.fillStyle = 'red';
+            // this.ctx.beginPath();
+            // this.ctx.moveTo(this.clipLineclipTopXPoint + 5, 0);
+            // this.ctx.lineTo(this.clipLineclipTopXPoint + this.particleWidth, 0);
+            // this.ctx.lineTo(this.clipLineclipBottomXPoint + this.particleWidth, this.h);
+            // this.ctx.lineTo(this.clipLineclipBottomXPoint + 5, this.h);
+            // this.ctx.closePath();
+            // this.ctx.fill();
+
+            this.ctx.restore();
+
             // draw second image
-            this.ctx.save();
-            // draw shadow
-            this.ctx.shadowOffsetX = -this.particleWidth + 5;
-            this.ctx.shadowOffsetY = 0;
-            this.ctx.shadowBlur = 15;
-            this.ctx.shadowColor = this.shadowColor;
-            this.ctx.fillStyle = 'none';
-            this.ctx.beginPath();
-            this.ctx.moveTo(clipTopXPoint + 5, 0);
-            this.ctx.lineTo(clipTopXPoint + this.particleWidth, 0);
-            this.ctx.lineTo(clipBottomXPoint + this.particleWidth, this.h);
-            this.ctx.lineTo(clipBottomXPoint + 5, this.h);
-            this.ctx.closePath();
-            this.ctx.fill();
-            
             // draw clip path 2
+            this.ctx.save();
             this.ctx.beginPath();
-            this.ctx.moveTo(clipTopXPoint, 0);
-            this.ctx.lineTo(this.w, 0);
-            this.ctx.lineTo(this.w, this.h);
-            this.ctx.lineTo(clipBottomXPoint, this.h);
+            this.ctx.moveTo(this.clipLine.clipTopXPoint, 0);
+            this.ctx.lineTo(this.w + this.particleWidth, 0);
+            this.ctx.lineTo(this.w + this.particleWidth, this.h);
+            this.ctx.lineTo(this.clipLine.clipBottomXPoint, this.h);
             this.ctx.clip();
             // draw image 2
             if (this.transitionDirection === 'Left-Right') {
@@ -204,7 +235,6 @@ class myBanner {
                 this.ctx.drawImage(next.img, 0, 0, this.w, this.h);
             }
             this.ctx.restore();
-
         }
 
         if (this.debug) {
@@ -248,29 +278,30 @@ class myBanner {
             }
 
             this.changeCurrentImageOnLoop(current);
+
+            current.visibleTime += 1000 / (this.frameRate);
            
         } else if (this.animationType === 'Transition 2') {
+            current.visibleTime += 1000 / (this.frameRate);
+            
+            
             this.changeCurrentImageOnLoop(current);
+            // if (current.visibleTime >= this.imageShowTime - (this.transitionTime / 3)) {
+            //     let clipStep = (this.w + this.particleWidth + (this.skewSizeAbs * this.rows)) / ((this.transitionTime / 3) / (1000 / this.frameRate));
 
-            if (current.visibleTime >= this.imageShowTime - (this.transitionTime / 3)) {
-                let clipStep = (this.w + this.particleWidth + (this.skewSizeAbs * this.rows)) / ((this.transitionTime / 3) / (1000 / this.frameRate));
-
-                if (this.transitionDirection === 'Left-Right') {
-                    this.currentClipPosition += clipStep;
-                } else if (this.transitionDirection === 'Right-Left') {
-                    this.currentClipPosition -= clipStep;
-                }
-            } else {
-                if (this.transitionDirection === 'Left-Right') {
-                    this.currentClipPosition = 0 - (this.particleWidth + this.skewSizeAbs * this.rows);
-                } else if (this.transitionDirection === 'Right-Left') {
-                    this.currentClipPosition = this.w + (this.particleWidth + this.skewSizeAbs * this.rows);
-                }
-            }
-
+            //     if (this.transitionDirection === 'Left-Right') {
+            //         this.currentClipPosition += clipStep;
+            //     } else if (this.transitionDirection === 'Right-Left') {
+            //         this.currentClipPosition -= clipStep;
+            //     }
+            // } else {
+            //     if (this.transitionDirection === 'Left-Right') {
+            //         this.currentClipPosition = 0 - (this.particleWidth + this.skewSizeAbs * this.rows);
+            //     } else if (this.transitionDirection === 'Right-Left') {
+            //         this.currentClipPosition = this.w + (this.particleWidth + this.skewSizeAbs * this.rows);
+            //     }
+            // }
         }
-
-        current.visibleTime += 1000 / (this.frameRate);
     }
 
     createParticles() {
@@ -489,12 +520,12 @@ class myBanner {
                     p.y += yStep;
 
                     if (isOverEdge) {
-                        p.x = p.startXPosition - 10;
-                        p.y = p.startYPosition - 10;
+                        p.x = p.startXPosition;
+                        p.y = p.startYPosition;
 
                         // uncomment in case if we want to move particles to the current position of clip line
                         if (p.liveTime > this.imageShowTime - (this.transitionTime / 2)) {
-                            p.x = this.currentClipPosition + this.skewSize * (p.row + 1);
+                            p.x = this.clipLine.currentXPos + this.skewSize * (p.row + 1);
 
                             if (this.transitionDirection === 'Right-Left') {
                                 p.x -= this.particleWidth;
@@ -552,13 +583,89 @@ class myBanner {
         });
     }
 
+    createClipLine() {
+        let fromLeft = 0 - (this.particleWidth + this.skewSizeAbs * this.rows);
+        let fromRight = this.w + (this.particleWidth + this.skewSizeAbs * this.rows);
+        if (this.transitionDirection === 'Left-Right') {
+            this.clipLine.startXPos = fromLeft;
+            this.clipLine.endXPos = fromRight;
+
+        } else if (this.transitionDirection === 'Right-Left') {
+            this.clipLine.startXPos = fromRight;
+            this.clipLine.endXPos = fromLeft;
+        }
+
+        this.clipLine.currentXPos = this.clipLine.startXPos;
+    }
+
+    drawClipLine() {
+        this.ctx.save();
+        this.ctx.fillStyle = 'green';
+        this.ctx.fillRect(this.clipTopXPoint - 5, 0, 10, 10);
+        this.ctx.fillRect(this.clipBottomXPoint - 5, this.h - 10, 10, 10);
+        this.ctx.restore();
+
+        if (this.debug) {
+            this.ctx.save();
+            this.ctx.strokeStyle = 'purple';
+            this.ctx.lineWidth = 3;
+            this.ctx.beginPath();
+            this.ctx.moveTo(this.clipLine.clipTopXPoint, 0);
+            this.ctx.lineTo(this.clipLine.clipBottomXPoint, this.h);
+            // this.ctx.moveTo(this.w / 2, 0);
+            // this.ctx.lineTo(this.w / 2, this.h);
+            this.ctx.closePath(); 
+            this.ctx.stroke();
+        }
+    }
+
+    updateClipLine() {
+        this.clipLine.liveTime = this.clipLine.liveTime % this.imageShowTime;
+
+        if (this.skewSize < 0) {
+            this.clipLine.clipTopXPoint = this.clipLine.currentXPos;
+            this.clipLine.clipBottomXPoint = this.clipLine.currentXPos + this.skewSizeAbs * this.rows;
+        } else if (this.skewSize > 0) {
+            this.clipLine.clipTopXPoint = this.clipLine.currentXPos + this.skewSizeAbs * this.rows;
+            this.clipLine.clipBottomXPoint = this.clipLine.currentXPos;
+        } else {
+            this.clipLine.clipTopXPoint = this.clipLine.clipBottomXPoint = this.clipLine.currentXPos;
+        }
+
+        if (this.clipLine.liveTime >= this.imageShowTime - (this.transitionTime / 3)) {
+            let clipStep = (this.w + this.particleWidth + (this.skewSizeAbs * this.rows)) / ((this.transitionTime / 3) / (1000 / this.frameRate));
+
+            if (this.transitionDirection === 'Left-Right') {
+                if (this.clipLine.currentXPos <= this.clipLine.endXPos - clipStep) {
+                    this.clipLine.currentXPos += clipStep;
+                } else {
+                    this.clipLine.currentXPos += this.clipLine.endXPos - this.clipLine.currentXPos;
+                }
+            } else if (this.transitionDirection === 'Right-Left') {
+                this.clipLine.currentXPos -= clipStep;
+            }
+        } else {
+            this.clipLine.currentXPos = this.clipLine.startXPos;
+            this.clipLine.currentYPos = this.clipLine.startYPos;
+        }
+
+        this.clipLine.liveTime += 1000 / this.frameRate;
+    }
+
     draw() {
         this.clear();
         this.drawImages();
         this.drawParticles(); 
+    
+        if (this.animationType === 'Transition 2') {
+            // this.drawClipLine();
+        }
     }
 
     update() {
+        if (this.animationType === 'Transition 2') {
+            this.updateClipLine();
+        }
         this.updateImages();
         this.updateParticles();
     }
@@ -583,13 +690,11 @@ class myBanner {
     }
 
     render() {
-        this.draw();
-
         if (!this.isPaused) {
-            this.fixFrameRate();    
+            this.fixFrameRate();  
+            this.draw();  
             this.update();
         }
-
         
         this.loop = window.requestAnimationFrame(this.render.bind(this));
     }
@@ -611,7 +716,7 @@ const checkBox = document.getElementById('toggler');
 const playBtn = document.getElementById('play');
 const pauseBtn = document.getElementById('pause');
 let myEv = new Event('settings-changed');
-let paused = true;
+let paused = false;
 
 window.addEventListener('settings-changed', addSettings);
 
@@ -658,7 +763,6 @@ addSettings();
 
 
 function addSettings() {
-    clearTimeout(timeout);
 
     const animationType = document.getElementById('animation-type').value;
     const transitionDirection = document.getElementById('direction').value;
@@ -679,8 +783,8 @@ function addSettings() {
     particlesColor2 = convertHexToRgbA(particlesColor2, 1);
 
 
-    playBtn.classList.remove('active');
-    pauseBtn.classList.add('active');
+    playBtn.classList.add('active');
+    pauseBtn.classList.remove('active');
 
     Widget.properties = {
         ...Widget.properties,
@@ -695,9 +799,9 @@ function addSettings() {
         skewSize
     }
 
-    banner = new myBanner(Widget.properties, false);
+    banner = new myBanner(Widget.properties, true);
 
-    debugInput.checked = false;
+    debugInput.checked = true;
 }
 
 function convertHexToRgbA(hex, a) {
