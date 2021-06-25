@@ -352,7 +352,7 @@ class myBanner {
             }
         } else if (this.animationType === 'Transition 2') {
             let particlesPerLine = 1;
-            let linesCount = (this.transitionDirection === 'Left-Right' || this.transitionDirection === 'Right-left') ? this.rows : this.cols;
+            let linesCount = (this.transitionDirection === 'Left-Right' || this.transitionDirection === 'Right-Left') ? this.rows : this.cols;
             let x;
             let y;
 
