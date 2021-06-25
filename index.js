@@ -1,9 +1,5 @@
 const Widget = {
     properties: {
-        // img1: `https://picsum.photos/id/${Math.floor(Math.random() * 50)}/300/300`,
-        // img2: `https://picsum.photos/id/${Math.floor(Math.random() * 50)}/300/300`,
-        // img3: `https://picsum.photos/id/${Math.floor(Math.random() * 50)}/300/300`,
-        // img4: `https://picsum.photos/id/${Math.floor(Math.random() * 50)}/300/300`,
         img1: `img1.png`,
         img2: `img2.png`,
         img3: `img3.png`,
@@ -165,8 +161,6 @@ class myBanner {
             imgUrls.forEach((url, i) => {
                 promiseArray.push(new Promise((res, rej) => {
                     const img = document.createElement('img');
-                    // img.width = this.w;
-                    // img.height = this.h;
                     img.crossOrigin = 'Anonymous';
                     img.onload = () => {
                         document.body.appendChild(img);
@@ -295,34 +289,25 @@ class myBanner {
         let current = this.images[this.currentImage];
         let next = this.images[(this.currentImage + 1) % this.images.length];
 
-        if (this.animationType === 'Transition 1' /* || this.animationType === 'Transition 3' */) {
-            // if (this.animationType === 'Transition 1') {
-                if (this.currentTime >= (this.imageShowTime - this.transitionTime)) {
-                    const changeOpacityStep = 1 / (this.transitionTime / (1000/this.frameRate));
-    
-                    if (current.opacity > 0) {
-                        // hide current images
-                        current.opacity -= changeOpacityStep;
-                        current.opacity = current.opacity < 0 ? 0 : current.opacity;
-    
-                        // show next image
-                        if (next.opacity < 1) {
-                            next.opacity += changeOpacityStep;
-                            next.opacity = next.opacity > 1 ? 1 : next.opacity;
-                        }
+        if (this.animationType === 'Transition 1') {
+            if (this.currentTime >= (this.imageShowTime - this.transitionTime)) {
+                const changeOpacityStep = 1 / (this.transitionTime / (1000/this.frameRate));
+
+                if (current.opacity > 0) {
+                    // hide current images
+                    current.opacity -= changeOpacityStep;
+                    current.opacity = current.opacity < 0 ? 0 : current.opacity;
+
+                    // show next image
+                    if (next.opacity < 1) {
+                        next.opacity += changeOpacityStep;
+                        next.opacity = next.opacity > 1 ? 1 : next.opacity;
                     }
-                } else {
-                    current.opacity = 1;
                 }
-            // }
-
-            // this.changeCurrentImageOnLoop();
-           
-        } else if (this.animationType === 'Transition 2') {
-            // this.changeCurrentImageOnLoop(current);
+            } else {
+                current.opacity = 1;
+            }
         }
-
-        // current.visibleTime += 1000 / (this.frameRate);
     }
 
     createParticles() {
@@ -419,7 +404,7 @@ class myBanner {
                   x: x,
                   y: y,
                   row,
-                  liveTime: this.images[this.currentImage].visibleTime,
+                  liveTime: this.currentTime,
                   fill: this.currentColor,
                   speed: (Math.random() * 75 + 75)
                 });
@@ -604,6 +589,54 @@ class myBanner {
         });
     }
 
+    drawLeftClip() {
+        this.ctx.beginPath();
+        this.ctx.moveTo(0,0);
+        this.ctx.lineTo(this.clipLine.clipTopXPoint, 0);
+        this.ctx.lineTo(this.clipLine.clipBottomXPoint, this.h);
+        this.ctx.lineTo(0, this.h);
+        this.ctx.clip();
+    }
+
+    drawRightClip() {
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.clipLine.clipTopXPoint, 0);
+        this.ctx.lineTo(this.w, 0);
+        this.ctx.lineTo(this.w, this.h);
+        this.ctx.lineTo(this.clipLine.clipBottomXPoint, this.h);
+        this.ctx.clip();
+    }
+
+    drawShadow(side) {
+        let shadowHolderOffet = 10;
+        let shadowWidth = Math.min(this.particleWidth, this.w * 0.2);
+        
+        this.ctx.shadowOffsetY = 0;
+        this.ctx.shadowBlur = 15;
+        this.ctx.shadowColor = this.shadowColor;
+        this.ctx.fillStyle = this.currentColor;
+        this.ctx.beginPath();
+        
+        if (side === 'Left') {
+            this.ctx.shadowOffsetX = -this.particleWidth;
+
+            this.ctx.moveTo(this.clipLine.clipTopXPoint + shadowHolderOffet, 0 - shadowHolderOffet);
+            this.ctx.lineTo(this.clipLine.clipTopXPoint + this.particleWidth + shadowHolderOffet, 0);
+            this.ctx.lineTo(this.clipLine.clipBottomXPoint + this.particleWidth + shadowHolderOffet, this.h);
+            this.ctx.lineTo(this.clipLine.clipBottomXPoint + shadowHolderOffet, this.h + shadowHolderOffet);    
+        } else if (side === 'Right') {
+            this.ctx.shadowOffsetX = this.particleWidth;
+
+            this.ctx.moveTo(this.clipLine.clipTopXPoint - shadowHolderOffet, 0 - shadowHolderOffet);
+            this.ctx.lineTo(this.clipLine.clipTopXPoint - this.particleWidth - shadowHolderOffet, 0 - shadowHolderOffet);
+            this.ctx.lineTo(this.clipLine.clipBottomXPoint - this.particleWidth - shadowHolderOffet, this.h + shadowHolderOffet);
+            this.ctx.lineTo(this.clipLine.clipBottomXPoint - shadowHolderOffet, this.h + shadowHolderOffet);
+        }
+
+        this.ctx.closePath();
+        this.ctx.fill();
+    }
+
     createClipLine() {
         let fromLeft = 0 - (this.particleWidth + this.skewSizeAbs * this.rows);
         let fromRight = this.w + (this.particleWidth + this.skewSizeAbs * this.rows);
@@ -616,14 +649,22 @@ class myBanner {
             this.clipLine.endXPos = fromLeft;
         }
 
+        // if (this.debug) {
+        //     this.clipLine.startXPos = fromLeft + this.w/2 + (this.particleWidth + this.skewSizeAbs);
+        // }
+
         this.clipLine.currentXPos = this.clipLine.startXPos;
     }
 
     drawClipLine() {
         this.ctx.save();
-        this.ctx.fillStyle = 'green';
-        this.ctx.fillRect(this.clipTopXPoint - 5, 0, 10, 10);
-        this.ctx.fillRect(this.clipBottomXPoint - 5, this.h - 10, 10, 10);
+        if (this.transitionDirection === 'Left-Right') {
+            this.drawLeftClip();
+            this.drawShadow('Left');
+        } else if (this.transitionDirection === 'Right-Left') {
+            this.drawRightClip();
+            this.drawShadow("Right");
+        }
         this.ctx.restore();
 
         if (this.debug) {
@@ -633,7 +674,6 @@ class myBanner {
             this.ctx.beginPath(); 
             this.ctx.moveTo(this.clipLine.clipTopXPoint + 2, 0);
             this.ctx.lineTo(this.clipLine.clipBottomXPoint + 2, this.h);
-            // this.ctx.closePath();
             this.ctx.stroke(); 
             this.ctx.restore();
         }
@@ -673,6 +713,13 @@ class myBanner {
 
     draw() {
         this.clear();
+
+        if (this.debug) {
+            this.ctx.save();
+            this.ctx.fillStyle = 'rgba(255, 0, 255, .5)';
+            this.ctx.fillRect(0,0, this.w, this.h);
+            this.ctx.restore();
+        }
 
         if (this.images.length) {
             this.drawImages();
