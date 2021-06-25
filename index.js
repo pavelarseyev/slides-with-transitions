@@ -29,6 +29,7 @@ class myBanner {
 
         //transition options start
         this.transitionTime = +options.transitionTime > 0 ? +options.transitionTime * 100 : 1000;
+        this.transitionStep = this.transitionTime / 3;
         //transition options end
 
         // particles settings start
@@ -199,8 +200,7 @@ class myBanner {
         } else if (this.animationType === 'Transition 2') {
             this.ctx.fillStyle = 'transparent';
 
-            // draw firstImage
-            // draw image 1
+            // draw firstImage start
             this.ctx.save();
             this.drawLeftClip()
 
@@ -208,7 +208,7 @@ class myBanner {
                 this.ctx.font = '20px sans-serif';
                 this.ctx.strokeStyle = 'orange';
             }
-
+            
             if (this.transitionDirection === 'Left-Right') {
                 this.ctx.drawImage(next.img, 0, 0, this.w, this.h);
 
@@ -222,9 +222,9 @@ class myBanner {
                 }
             }
             this.ctx.restore();
+            // draw firstImage end
 
-            // draw second image
-            // draw clip path 2
+            // draw second image start
             this.ctx.save();
             this.drawRightClip();
 
@@ -232,7 +232,7 @@ class myBanner {
                 this.ctx.font = '20px sans-serif';
                 this.ctx.strokeStyle = 'orange';
             }
-            // draw image 2
+
             if (this.transitionDirection === 'Left-Right') {
                 this.ctx.drawImage(current.img, 0, 0, this.w, this.h);
                 
@@ -340,6 +340,7 @@ class myBanner {
                         x: x,
                         y: y,
                         path,
+                        xStep: path / (this.transitionStep / (1000 / this.frameRate)),
                         row,
                         totalColumns: totalColumns,
                         col: column,
@@ -510,46 +511,42 @@ class myBanner {
                             // fill with color
                             this.currentColor = this.currentImage % 2 === 0 ? this.particlesColor : this.particlesColor2;
                             this.calculateShadowColor();
-                            // p.fill = this.currentColor;
                         }
                     }
                 }
             } else if(this.animationType === 'Transition 3') {
-                let transitionStep = this.transitionTime / 3;
-                let xStep = p.path / (transitionStep / (1000 / this.frameRate));
-
-                if (p.liveTime >= this.imageShowTime - this.transitionTime + transitionStep) {
-                    // start moving
-                    if (p.liveTime < this.imageShowTime) {
-                        if (this.transitionDirection === 'Left-Right') {                        
-                            if (p.x < p.endXPosition - xStep) {
-                                p.x += xStep;
-                            } else {
-                                p.x += p.endXPosition - p.x;
-                            }
+                let xStep = p.xStep;
+                let startTime = this.imageShowTime - this.transitionTime + this.transitionStep;
+                let enterUntil = startTime + this.transitionStep;
+                let outUntil = this.imageShowTime;
+                let endTime = this.imageShowTime + this.transitionStep;
+                
+                if (p.liveTime >= startTime) {
+                    if (p.liveTime <= enterUntil) {
+                        if (this.transitionDirection === 'Left-Right') {   
+                            p.x += xStep;
                         } else if (this.transitionDirection === 'Right-Left') {
-                            if (p.x > p.endXPosition + xStep) {
-                                p.x -= xStep;
-                            } else {
-                                p.x -= p.x - p.endXPosition;
-                            }
+                            p.x -= xStep;
                         }
-                    } else {
-                        let rowSpeed = this.skewSizeAbs * (p.row + 1);
-
-                        if (this.transitionDirection === 'Left-Right') {                        
-                            p.x += this.skewSizeAbs * (p.col + 1) + rowSpeed;
+                    } else if (p.liveTime >= outUntil) {
+                        xStep = this.particles[(this.particles.length - 1)  - i].xStep * 1.1;
+    
+                        if (this.transitionDirection === 'Left-Right') {
+                            p.x += xStep;
                         } else if (this.transitionDirection === 'Right-Left') {
-                            p.x -= this.skewSizeAbs * (p.totalColumns - p.col) + rowSpeed;
+                            p.x -= xStep;
                         }
     
-                        if (p.liveTime >= this.imageShowTime + transitionStep) {
+                        if (p.liveTime >= endTime) {
                             p.y = p.startYPosition;
                             p.x = p.startXPosition;
                             p.liveTime = this.currentTime;
                         }
+                    } else {
+                        p.x = p.endXPosition;
+                        p.y = p.endYPosition;
                     }
-                }
+                }  
             }
 
             /* start counting of particle lifetime */
@@ -617,9 +614,9 @@ class myBanner {
             this.clipLine.endXPos = fromLeft;
         }
 
-        // if (this.debug) {
-        //     this.clipLine.startXPos = fromLeft + this.w/2 + (this.particleWidth + this.skewSizeAbs);
-        // }
+        if (this.debug) {
+            this.clipLine.startXPos = fromLeft + this.w/2 + (this.particleWidth + this.skewSizeAbs);
+        }
 
         this.clipLine.currentXPos = this.clipLine.startXPos;
     }
@@ -700,10 +697,10 @@ class myBanner {
     }
 
     update() {
-        
         if (this.images.length) {
             this.updateImages();
         }
+
         this.updateParticles();
 
         this.updateCurrentTime();
