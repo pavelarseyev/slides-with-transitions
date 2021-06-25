@@ -76,6 +76,7 @@ class myBanner {
             currentYPos: 0,
             clipTopXPoint: 0,
             clipBottomXPoint: 0,
+            path: 0
         };
 
 
@@ -603,7 +604,7 @@ class myBanner {
     }
 
     createClipLine() {
-        let fromLeft = 0 - (this.particleWidth + this.skewSizeAbs * this.rows);
+        let fromLeft = 0 - (this.skewSizeAbs * this.rows + this.particleWidth + this.skewSizeAbs);
         let fromRight = this.w + (this.particleWidth + this.skewSizeAbs * this.rows);
         if (this.transitionDirection === 'Left-Right') {
             this.clipLine.startXPos = fromLeft;
@@ -618,6 +619,7 @@ class myBanner {
             this.clipLine.startXPos = fromLeft + this.w/2 + (this.particleWidth + this.skewSizeAbs);
         }
 
+        this.clipLine.path = Math.abs(this.clipLine.startXPos - this.clipLine.endXPos);
         this.clipLine.currentXPos = this.clipLine.startXPos;
     }
 
@@ -656,7 +658,8 @@ class myBanner {
         }
 
         if (this.currentTime >= this.imageShowTime - (this.transitionTime / 3)) {
-            let clipStep = (this.w + this.particleWidth + (this.skewSizeAbs * this.rows)) / ((this.transitionTime / 3) / (1000 / this.frameRate));
+            // let clipStep = (this.w + this.particleWidth + (this.skewSizeAbs * this.rows)) / (this.transitionStep / (1000 / this.frameRate));
+            let clipStep = this.clipLine.path / (this.transitionStep / (1000 / this.frameRate));
 
             if (this.transitionDirection === 'Left-Right') {
                 if (this.clipLine.currentXPos <= this.clipLine.endXPos - clipStep) {
@@ -665,7 +668,11 @@ class myBanner {
                     this.clipLine.currentXPos += this.clipLine.endXPos - this.clipLine.currentXPos;
                 }
             } else if (this.transitionDirection === 'Right-Left') {
-                this.clipLine.currentXPos -= clipStep;
+                if (this.clipLine.currentXPos >= this.clipLine.endXPos - clipStep) {
+                    this.clipLine.currentXPos -= clipStep;
+                } else {
+                    this.clipLine.currentXPos -= this.clipLine.currentXPos - this.clipLine.endXPos;
+                }
             }
 
             if (this.currentTime >= this.imageShowTime) {
@@ -673,6 +680,7 @@ class myBanner {
                 this.clipLine.currentYPos = this.clipLine.startYPos; 
             }
         }
+
     }
 
     draw() {
