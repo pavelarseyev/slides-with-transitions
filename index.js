@@ -202,12 +202,7 @@ class myBanner {
             // draw firstImage
             // draw image 1
             this.ctx.save();
-            this.ctx.beginPath();
-            this.ctx.moveTo(0, 0);
-            this.ctx.lineTo(this.clipLine.clipTopXPoint, 0);
-            this.ctx.lineTo(this.clipLine.clipBottomXPoint, this.h);
-            this.ctx.lineTo(0, this.h);
-            this.ctx.clip();
+            this.drawLeftClip()
 
             if (this.debug) {
                 this.ctx.font = '20px sans-serif';
@@ -226,30 +221,12 @@ class myBanner {
                     this.ctx.strokeText('Current', 20, this.h/2);
                 }
             }
-
-            // this.ctx.shadowOffsetX = -this.particleWidth + 5;
-            // this.ctx.shadowOffsetY = 0;
-            // this.ctx.shadowBlur = 15;
-            // this.ctx.shadowColor = this.shadowColor;
-            // this.ctx.fillStyle = 'red';
-            // this.ctx.beginPath();
-            // this.ctx.moveTo(this.clipLineclipTopXPoint + 5, 0);
-            // this.ctx.lineTo(this.clipLineclipTopXPoint + this.particleWidth, 0);
-            // this.ctx.lineTo(this.clipLineclipBottomXPoint + this.particleWidth, this.h);
-            // this.ctx.lineTo(this.clipLineclipBottomXPoint + 5, this.h);
-            // this.ctx.closePath();
-            // this.ctx.fill();
             this.ctx.restore();
 
             // draw second image
             // draw clip path 2
             this.ctx.save();
-            this.ctx.beginPath();
-            this.ctx.moveTo(this.clipLine.clipTopXPoint, 0);
-            this.ctx.lineTo(this.w, 0);
-            this.ctx.lineTo(this.w, this.h);
-            this.ctx.lineTo(this.clipLine.clipBottomXPoint, this.h);
-            this.ctx.clip();
+            this.drawRightClip();
 
             if (this.debug) {
                 this.ctx.font = '20px sans-serif';
@@ -380,33 +357,24 @@ class myBanner {
             for (let row = 0; row < linesCount; row++) {
               for (let particle = 0; particle < particlesPerLine; particle++) {
                 y = this.particleHeight * row;
+                x = this.clipLine.currentXPos - this.particleWidth;
 
-                switch (this.transitionDirection) {
-                    case "Left-Right":
-                        x = (this.particleWidth + this.skewSizeAbs + this.particleWidth * particle) * -1;
-                        break;
-                    case "Right-Left":
-                        x = (this.w + this.skewSizeAbs) + (this.particleWidth * particle );
-                        break;
-                    case "Up-Down":
-                        x = this.particleWidth * row;
-                        y = this.particleHeight * particle * -1;
-                        break;
-                    case "Bottom-up":
-                        x = this.particleWidth * row;
-                        y = this.h + this.particleHeight * particle;
-                        break;
-                }
+
+                if (this.transitionDirection === 'Left-Right' || this.transitionDirection === 'Right-Left') {
+                    // x = this.clipLine.startXPos - this.particleWidth;
+                } else if (this.transitionDirection === 'Up-Down' || this.transitionDirection === 'Bottom-Up') {
+                    x = this.particleWidth * row;
+                    //TODO: Finish the vertical version 
+                } 
 
                 this.particles.push({
-                  startXPosition: x,
-                  startYPosition: y,
-                  x: x,
-                  y: y,
-                  row,
-                  liveTime: this.currentTime,
-                  fill: this.currentColor,
-                  speed: (Math.random() * 75 + 75)
+                    startXPosition: x,
+                    startYPos: 0,
+                    x: x,
+                    y: y,
+                    row,
+                    fill: this.currentColor,
+                    speed: (Math.random() * (this.w * 0.05) + this.w * 0.05)
                 });
               }
             }
@@ -430,7 +398,11 @@ class myBanner {
                 if (this.debug) {
                     this.ctx.fillStyle = 'rgba(255, 0,0, .5)';
                 } else {
-                    this.ctx.fillStyle = fill;
+                    if (this.animationType === 'Transition 2') {
+                        this.ctx.fillStyle = this.currentColor;
+                    } else {
+                        this.ctx.fillStyle = fill;
+                    }
                 }
                 
                 this.ctx.save();
@@ -479,7 +451,7 @@ class myBanner {
                         p.fill = Math.random() < 0.25 ? 'transparent' : this.currentColor;
 
                         if (p.fill === 'transparent') {
-                            p.liveTime = this.images[this.currentImage].visibleTime;
+                            p.liveTime = this.currentTime;
                         }
                     }
                 }
@@ -487,11 +459,10 @@ class myBanner {
                 let acceleration;
 
                 if (this.transitionDirection === 'Left-Right') {
-                    acceleration = Math.abs(p.x / this.w * p.speed) + 0.1;
+                    acceleration = Math.abs(p.x / this.w * 10) + 0.1;
                 } else if (this.transitionDirection === 'Right-Left') {
-                    acceleration = Math.abs(Math.abs(p.x / this.w - 1) * p.speed) + 0.1;
+                    acceleration = Math.abs(Math.abs(p.x / this.w - 1) * 10) + 0.1;
                 }
-
 
                 let xStep = p.speed + acceleration;
                 let yStep = p.speed + acceleration;
@@ -521,29 +492,25 @@ class myBanner {
                 }
 
                 // apply values
-                if (p.liveTime >= this.imageShowTime - this.transitionTime) {
+                if (this.currentTime >= this.imageShowTime - this.transitionTime) {
                     p.x += xStep;
                     p.y += yStep;
 
                     if (isOverEdge) {
-                        p.x = p.startXPosition;
-                        p.y = p.startYPosition;
+                        p.x = this.clipLine.currentXPos;
+                        // p.y = p.startYPosition;
 
-                        // uncomment in case if we want to move particles to the current position of clip line
-                        if (p.liveTime > this.imageShowTime - (this.transitionTime / 2)) {/*  */
-                            p.x = this.clipLine.currentXPos + this.skewSize * (p.row + 1);
-
-                            if (this.transitionDirection === 'Right-Left') {
-                                p.x -= this.particleWidth;
-                            }
+                        if (this.transitionDirection === 'Left-Right') {
+                            p.x += this.skewSizeAbs; 
+                        } else if (this.transitionDirection === 'Right-Left') {
+                            p.x -= this.particleWidth;
                         }
 
-                        if (p.liveTime >= this.imageShowTime) {
-                            p.liveTime = this.images[this.currentImage].visibleTime;
+                        if (this.currentTime >= this.imageShowTime) {
                             // fill with color
-                            this.currentColor = (this.currentImage + 1) % 2 === 0 ? this.particlesColor2 : this.particlesColor;
+                            this.currentColor = this.currentImage % 2 === 0 ? this.particlesColor : this.particlesColor2;
                             this.calculateShadowColor();
-                            p.fill = this.currentColor;
+                            // p.fill = this.currentColor;
                         }
                     }
                 }
@@ -569,6 +536,7 @@ class myBanner {
                         }
                     } else {
                         let rowSpeed = this.skewSizeAbs * (p.row + 1);
+
                         if (this.transitionDirection === 'Left-Right') {                        
                             p.x += this.skewSizeAbs * (p.col + 1) + rowSpeed;
                         } else if (this.transitionDirection === 'Right-Left') {
@@ -578,7 +546,7 @@ class myBanner {
                         if (p.liveTime >= this.imageShowTime + transitionStep) {
                             p.y = p.startYPosition;
                             p.x = p.startXPosition;
-                            p.liveTime = this.images[this.currentImage].visibleTime;
+                            p.liveTime = this.currentTime;
                         }
                     }
                 }
@@ -609,7 +577,7 @@ class myBanner {
 
     drawShadow(side) {
         let shadowHolderOffet = 10;
-        let shadowWidth = Math.min(this.particleWidth, this.w * 0.2);
+        let shadowWidth = Math.min(this.particleWidth / 2, this.w * 0.1);
         
         this.ctx.shadowOffsetY = 0;
         this.ctx.shadowBlur = 15;
@@ -618,18 +586,18 @@ class myBanner {
         this.ctx.beginPath();
         
         if (side === 'Left') {
-            this.ctx.shadowOffsetX = -this.particleWidth;
+            this.ctx.shadowOffsetX = -shadowWidth;
 
             this.ctx.moveTo(this.clipLine.clipTopXPoint + shadowHolderOffet, 0 - shadowHolderOffet);
-            this.ctx.lineTo(this.clipLine.clipTopXPoint + this.particleWidth + shadowHolderOffet, 0);
-            this.ctx.lineTo(this.clipLine.clipBottomXPoint + this.particleWidth + shadowHolderOffet, this.h);
+            this.ctx.lineTo(this.clipLine.clipTopXPoint + shadowWidth + shadowHolderOffet, 0);
+            this.ctx.lineTo(this.clipLine.clipBottomXPoint + shadowWidth + shadowHolderOffet, this.h);
             this.ctx.lineTo(this.clipLine.clipBottomXPoint + shadowHolderOffet, this.h + shadowHolderOffet);    
         } else if (side === 'Right') {
-            this.ctx.shadowOffsetX = this.particleWidth;
+            this.ctx.shadowOffsetX = shadowWidth;
 
             this.ctx.moveTo(this.clipLine.clipTopXPoint - shadowHolderOffet, 0 - shadowHolderOffet);
-            this.ctx.lineTo(this.clipLine.clipTopXPoint - this.particleWidth - shadowHolderOffet, 0 - shadowHolderOffet);
-            this.ctx.lineTo(this.clipLine.clipBottomXPoint - this.particleWidth - shadowHolderOffet, this.h + shadowHolderOffet);
+            this.ctx.lineTo(this.clipLine.clipTopXPoint - shadowWidth - shadowHolderOffet, 0 - shadowHolderOffet);
+            this.ctx.lineTo(this.clipLine.clipBottomXPoint - shadowWidth - shadowHolderOffet, this.h + shadowHolderOffet);
             this.ctx.lineTo(this.clipLine.clipBottomXPoint - shadowHolderOffet, this.h + shadowHolderOffet);
         }
 
@@ -690,7 +658,6 @@ class myBanner {
             this.clipLine.clipTopXPoint = this.clipLine.clipBottomXPoint = this.clipLine.currentXPos;
         }
 
-
         if (this.currentTime >= this.imageShowTime - (this.transitionTime / 3)) {
             let clipStep = (this.w + this.particleWidth + (this.skewSizeAbs * this.rows)) / ((this.transitionTime / 3) / (1000 / this.frameRate));
 
@@ -725,7 +692,7 @@ class myBanner {
             this.drawImages();
         }
         
-        // this.drawParticles(); 
+        this.drawParticles(); 
     
         if (this.animationType === 'Transition 2') {
             this.drawClipLine();
@@ -737,7 +704,7 @@ class myBanner {
         if (this.images.length) {
             this.updateImages();
         }
-        // this.updateParticles();
+        this.updateParticles();
 
         this.updateCurrentTime();
 
@@ -878,9 +845,9 @@ function addSettings() {
         skewSize
     }
 
-    banner = new myBanner(Widget.properties, true);
+    banner = new myBanner(Widget.properties, false);
 
-    debugInput.checked = true;
+    // debugInput.checked = true;
 }
 
 function convertHexToRgbA(hex, a) {
