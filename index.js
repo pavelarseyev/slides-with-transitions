@@ -29,6 +29,7 @@ class myBanner {
         this.framesPerSecond = 0;
         this.animationType = options.animationType;
         this.transitionDirection = options.transitionDirection;
+        this.currentTime = 0;
 
         //transition options start
         this.transitionTime = +options.transitionTime > 0 ? +options.transitionTime * 100 : 1000;
@@ -78,7 +79,6 @@ class myBanner {
             currentYPos: 0,
             clipTopXPoint: 0,
             clipBottomXPoint: 0,
-            liveTime: 0
         };
 
 
@@ -114,6 +114,18 @@ class myBanner {
         this.particles = [];
         this.createParticles();
         this.createClipLine();
+    }  
+
+    updateCurrentTime() {
+        let timeStep = 1000 / this.frameRate;
+
+        this.changeCurrentImageOnLoop();
+
+        if (this.currentTime > this.imageShowTime) {
+            this.currentTime = 0;
+        }
+
+        this.currentTime += timeStep;
     }
 
     calculateShadowColor() {
@@ -122,11 +134,12 @@ class myBanner {
         this.shadowColor = this.currentColor.replace(/(\d\))$/gi, `${alpha})`);
     }
 
-    changeCurrentImageOnLoop(current) {
-        if (current.visibleTime > this.imageShowTime) {
-            this.currentImage++;
-            this.currentImage = this.currentImage % this.images.length;
-            current.visibleTime = 0;
+    changeCurrentImageOnLoop() {
+        if (this.images.length) {
+            if (this.currentTime >= this.imageShowTime) {
+                this.currentImage++;
+                this.currentImage = this.currentImage % this.images.length;
+            }
         }
     }
 
@@ -147,39 +160,43 @@ class myBanner {
         if (options.img4) {
             imgUrls.push(options.img4);
         }
-        imgUrls.forEach((url, i) => {
-            promiseArray.push(new Promise((res, rej) => {
-                const img = document.createElement('img');
-                // img.width = this.w;
-                // img.height = this.h;
-                img.crossOrigin = 'Anonymous';
-                img.onload = () => {
-                    document.body.appendChild(img);
 
-                    this.images.push({
-                        img,
-                        width: img.width,
-                        height: img.height,
-                        opacity: i === 0 ? 1 : 0,
-                        visibleTime: 0
-                    });
+        if (imgUrls.length) {
+            imgUrls.forEach((url, i) => {
+                promiseArray.push(new Promise((res, rej) => {
+                    const img = document.createElement('img');
+                    // img.width = this.w;
+                    // img.height = this.h;
+                    img.crossOrigin = 'Anonymous';
+                    img.onload = () => {
+                        document.body.appendChild(img);
+    
+                        this.images.push({
+                            img,
+                            width: img.width,
+                            height: img.height,
+                            opacity:  0
+                        });
+    
+                        img.remove();
+                        res();
+                    };
+                    img.src = url;
+                }));
+            });
 
-                    img.remove();
-                    res();
-                };
-                img.src = url;
-            }));
-        });
-
-        return promiseArray;
+            return promiseArray;
+        } else {
+            return [Promise.resolve()];
+        }        
     }
 
     drawImages() {
         let current = this.images[this.currentImage];
         let next = this.images[(this.currentImage + 1) % this.images.length];
 
-        if (this.animationType === 'Transition 1' || this.animationType === 'Transition 3') {
-            [current, next].forEach(image => {
+        if (this.animationType === 'Transition 1') {
+            [next, current].forEach(image => {
                 this.ctx.save();
                 this.ctx.globalAlpha = image.opacity;
                 this.ctx.drawImage(image.img, 0, 0, this.w, this.h);
@@ -198,10 +215,22 @@ class myBanner {
             this.ctx.lineTo(0, this.h);
             this.ctx.clip();
 
+            if (this.debug) {
+                this.ctx.font = '20px sans-serif';
+                this.ctx.strokeStyle = 'orange';
+            }
+
             if (this.transitionDirection === 'Left-Right') {
                 this.ctx.drawImage(next.img, 0, 0, this.w, this.h);
+
+                if (this.debug) {
+                    this.ctx.strokeText('Next', 20, this.h/2);
+                }
             } else if (this.transitionDirection === 'Right-Left') {
                 this.ctx.drawImage(current.img, 0, 0, this.w, this.h);
+                if (this.debug) {
+                    this.ctx.strokeText('Current', 20, this.h/2);
+                }
             }
 
             // this.ctx.shadowOffsetX = -this.particleWidth + 5;
@@ -216,7 +245,6 @@ class myBanner {
             // this.ctx.lineTo(this.clipLineclipBottomXPoint + 5, this.h);
             // this.ctx.closePath();
             // this.ctx.fill();
-
             this.ctx.restore();
 
             // draw second image
@@ -224,17 +252,32 @@ class myBanner {
             this.ctx.save();
             this.ctx.beginPath();
             this.ctx.moveTo(this.clipLine.clipTopXPoint, 0);
-            this.ctx.lineTo(this.w + this.particleWidth, 0);
-            this.ctx.lineTo(this.w + this.particleWidth, this.h);
+            this.ctx.lineTo(this.w, 0);
+            this.ctx.lineTo(this.w, this.h);
             this.ctx.lineTo(this.clipLine.clipBottomXPoint, this.h);
             this.ctx.clip();
+
+            if (this.debug) {
+                this.ctx.font = '20px sans-serif';
+                this.ctx.strokeStyle = 'orange';
+            }
             // draw image 2
             if (this.transitionDirection === 'Left-Right') {
                 this.ctx.drawImage(current.img, 0, 0, this.w, this.h);
+                
+                if (this.debug) {
+                    this.ctx.strokeText('Current', this.w - 200, this.h/2);
+                }
             } else if (this.transitionDirection === 'Right-Left') {
                 this.ctx.drawImage(next.img, 0, 0, this.w, this.h);
+                
+                if (this.debug) {
+                    this.ctx.strokeText('Current', this.w - 200, this.h/2);
+                }
             }
             this.ctx.restore();
+        } else if (this.animationType === 'Transition 3') {
+            this.ctx.drawImage(current.img, 0, 0, this.w, this.h);
         }
 
         if (this.debug) {
@@ -244,7 +287,6 @@ class myBanner {
             this.ctx.font = `${this.h / 6}px sans-serif`;
             let text = this.ctx.measureText("Image 1");
             this.ctx.strokeText(`Image ${this.currentImage}`, this.w/2 - text.width/2, this.h/2 - this.h / 12);
-            this.ctx.stroke();
             this.ctx.restore();
         }
     }
@@ -253,14 +295,9 @@ class myBanner {
         let current = this.images[this.currentImage];
         let next = this.images[(this.currentImage + 1) % this.images.length];
 
-        if (this.animationType === 'Transition 1' || this.animationType === 'Transition 3') {
-            if (current.visibleTime <= 0) {
-                current.opacity = 1;
-            }
-
-            if (this.animationType === 'Transition 1') {
-                if (current.visibleTime >= (this.imageShowTime - this.transitionTime)) {
-
+        if (this.animationType === 'Transition 1' /* || this.animationType === 'Transition 3' */) {
+            // if (this.animationType === 'Transition 1') {
+                if (this.currentTime >= (this.imageShowTime - this.transitionTime)) {
                     const changeOpacityStep = 1 / (this.transitionTime / (1000/this.frameRate));
     
                     if (current.opacity > 0) {
@@ -274,34 +311,18 @@ class myBanner {
                             next.opacity = next.opacity > 1 ? 1 : next.opacity;
                         }
                     }
+                } else {
+                    current.opacity = 1;
                 }
-            }
+            // }
 
-            this.changeCurrentImageOnLoop(current);
-
-            current.visibleTime += 1000 / (this.frameRate);
+            // this.changeCurrentImageOnLoop();
            
         } else if (this.animationType === 'Transition 2') {
-            current.visibleTime += 1000 / (this.frameRate);
-            
-            
-            this.changeCurrentImageOnLoop(current);
-            // if (current.visibleTime >= this.imageShowTime - (this.transitionTime / 3)) {
-            //     let clipStep = (this.w + this.particleWidth + (this.skewSizeAbs * this.rows)) / ((this.transitionTime / 3) / (1000 / this.frameRate));
-
-            //     if (this.transitionDirection === 'Left-Right') {
-            //         this.currentClipPosition += clipStep;
-            //     } else if (this.transitionDirection === 'Right-Left') {
-            //         this.currentClipPosition -= clipStep;
-            //     }
-            // } else {
-            //     if (this.transitionDirection === 'Left-Right') {
-            //         this.currentClipPosition = 0 - (this.particleWidth + this.skewSizeAbs * this.rows);
-            //     } else if (this.transitionDirection === 'Right-Left') {
-            //         this.currentClipPosition = this.w + (this.particleWidth + this.skewSizeAbs * this.rows);
-            //     }
-            // }
+            // this.changeCurrentImageOnLoop(current);
         }
+
+        // current.visibleTime += 1000 / (this.frameRate);
     }
 
     createParticles() {
@@ -360,7 +381,7 @@ class myBanner {
                         row,
                         totalColumns: totalColumns,
                         col: column,
-                        liveTime: this.images[this.currentImage].visibleTime,
+                        liveTime: this.currentTime,
                         fill
                     });
                 }
@@ -524,7 +545,7 @@ class myBanner {
                         p.y = p.startYPosition;
 
                         // uncomment in case if we want to move particles to the current position of clip line
-                        if (p.liveTime > this.imageShowTime - (this.transitionTime / 2)) {
+                        if (p.liveTime > this.imageShowTime - (this.transitionTime / 2)) {/*  */
                             p.x = this.clipLine.currentXPos + this.skewSize * (p.row + 1);
 
                             if (this.transitionDirection === 'Right-Left') {
@@ -609,19 +630,16 @@ class myBanner {
             this.ctx.save();
             this.ctx.strokeStyle = 'purple';
             this.ctx.lineWidth = 3;
-            this.ctx.beginPath();
-            this.ctx.moveTo(this.clipLine.clipTopXPoint, 0);
-            this.ctx.lineTo(this.clipLine.clipBottomXPoint, this.h);
-            // this.ctx.moveTo(this.w / 2, 0);
-            // this.ctx.lineTo(this.w / 2, this.h);
-            this.ctx.closePath(); 
-            this.ctx.stroke();
+            this.ctx.beginPath(); 
+            this.ctx.moveTo(this.clipLine.clipTopXPoint + 2, 0);
+            this.ctx.lineTo(this.clipLine.clipBottomXPoint + 2, this.h);
+            // this.ctx.closePath();
+            this.ctx.stroke(); 
+            this.ctx.restore();
         }
     }
 
     updateClipLine() {
-        this.clipLine.liveTime = this.clipLine.liveTime % this.imageShowTime;
-
         if (this.skewSize < 0) {
             this.clipLine.clipTopXPoint = this.clipLine.currentXPos;
             this.clipLine.clipBottomXPoint = this.clipLine.currentXPos + this.skewSizeAbs * this.rows;
@@ -632,7 +650,8 @@ class myBanner {
             this.clipLine.clipTopXPoint = this.clipLine.clipBottomXPoint = this.clipLine.currentXPos;
         }
 
-        if (this.clipLine.liveTime >= this.imageShowTime - (this.transitionTime / 3)) {
+
+        if (this.currentTime >= this.imageShowTime - (this.transitionTime / 3)) {
             let clipStep = (this.w + this.particleWidth + (this.skewSizeAbs * this.rows)) / ((this.transitionTime / 3) / (1000 / this.frameRate));
 
             if (this.transitionDirection === 'Left-Right') {
@@ -644,30 +663,40 @@ class myBanner {
             } else if (this.transitionDirection === 'Right-Left') {
                 this.clipLine.currentXPos -= clipStep;
             }
-        } else {
-            this.clipLine.currentXPos = this.clipLine.startXPos;
-            this.clipLine.currentYPos = this.clipLine.startYPos;
-        }
 
-        this.clipLine.liveTime += 1000 / this.frameRate;
+            if (this.currentTime >= this.imageShowTime) {
+                this.clipLine.currentXPos = this.clipLine.startXPos;
+                this.clipLine.currentYPos = this.clipLine.startYPos; 
+            }
+        }
     }
 
     draw() {
         this.clear();
-        this.drawImages();
-        this.drawParticles(); 
+
+        if (this.images.length) {
+            this.drawImages();
+        }
+        
+        // this.drawParticles(); 
     
         if (this.animationType === 'Transition 2') {
-            // this.drawClipLine();
+            this.drawClipLine();
         }
     }
 
     update() {
+        
+        if (this.images.length) {
+            this.updateImages();
+        }
+        // this.updateParticles();
+
+        this.updateCurrentTime();
+
         if (this.animationType === 'Transition 2') {
             this.updateClipLine();
         }
-        this.updateImages();
-        this.updateParticles();
     }
 
     clear() {
@@ -745,7 +774,7 @@ debugInput.addEventListener('change', (e) => {
         banner.debug = debugInput.checked;
     }
 });
-window.addEventListener('keypress', (e) => {
+window.addEventListener('keydown', (e) => {
     if (e.code === 'Space') {
         paused = !paused;
         if (paused) {
@@ -753,6 +782,9 @@ window.addEventListener('keypress', (e) => {
         } else {
             playBtn.click();
         }
+    } else if (e.code === 'ArrowUp') {
+        banner.update();
+        banner.draw();
     }
 })
 
