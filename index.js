@@ -507,12 +507,13 @@ class myBanner {
                     this.ctx.fillStyle = fill;
                 }
 
-                if (this.transitionDirection === 'Left-Right' || this.transitionDirection === 'Right-Left') {
-                    this.drawHorizontalParticle(x, y);
-                } else if (this.transitionDirection === 'Up-Down' || this.transitionDirection === 'Bottom-Up'){
-                    this.darwVerticalParticle(x,y);
-                }
-               
+                this.drawHorizontalParticle(x, y);
+                //TODO: finish vertical particle
+                // if (this.transitionDirection === 'Left-Right' || this.transitionDirection === 'Right-Left') {
+                //     this.drawHorizontalParticle(x, y);
+                // } else if (this.transitionDirection === 'Up-Down' || this.transitionDirection === 'Bottom-Up'){
+                //     this.darwVerticalParticle(x,y);
+                // }
             }
           
             if (this.debug) {
