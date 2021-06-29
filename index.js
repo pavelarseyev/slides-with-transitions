@@ -416,6 +416,20 @@ class myBanner {
                 }
             }
 
+            if (this.useAdditionalColors) {
+                let linesPositionsArray;
+
+                linesPositionsArray = this.particles.map(p => {
+                    return {x: p.x, y: p.y}
+                })
+
+                linesPositionsArray = linesPositionsArray.sort(() => Math.random() - 0.5);
+
+                linesPositionsArray.forEach(({x, y}, i) => {
+                    this.particles[i].x = x;
+                    this.particles[i].y = y;
+                });
+            }
         }
     }
 
