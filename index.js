@@ -379,8 +379,6 @@ class myBanner {
                     let part1 = Math.round(rowsPercent * this.color1Percent);
                     let part2 = Math.round(rowsPercent * this.color2Percent);
                     let part3 = Math.round(rowsPercent * this.color3Percent);
-                    console.log(part1, part2, part3);
-                    console.log(linesCount);
 
                     if (part1 && row + 1 <= part1) {
                         fill = this.additionalColor1;
@@ -533,7 +531,6 @@ class myBanner {
 
                     if (isOverEdge) {
                         p.x = this.clipLine.currentXPos;
-                        // p.y = p.startYPosition;
 
                         if (this.transitionDirection === 'Left-Right') {
                             p.x += this.skewSizeAbs; 
@@ -542,8 +539,9 @@ class myBanner {
                         }
 
                         if (this.currentTime >= this.imageShowTime) {
-                            // fill with color
                             this.currentColor = this.currentImage % 2 === 0 ? this.particlesColor2 : this.particlesColor;
+
+                            //fill the particle to oposite color in case if the particle has on of the default colors, or leave the initial fill
                             p.fill = p.fill === this.particlesColor ? this.particlesColor2 : p.fill === this.particlesColor2 ? this.particlesColor : p.fill;
                             this.calculateShadowColor();
                         }
