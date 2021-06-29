@@ -406,7 +406,7 @@ class myBanner {
 
                     this.particles.push({
                         startXPosition: x,
-                        startYPos: 0,
+                        startYPosisiton: y,
                         x: x,
                         y: y,
                         row,
@@ -428,6 +428,8 @@ class myBanner {
                 linesPositionsArray.forEach(({x, y}, i) => {
                     this.particles[i].x = x;
                     this.particles[i].y = y;
+                    this.particles[i].startXPosition = x;
+                    this.particles[i].startYPosition = y;
                 });
             }
         }
