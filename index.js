@@ -14,7 +14,14 @@ const Widget = {
         particlesColor2: 'rgb(0,0,0, 1)',
         particlesPerColumn: 10,
         particlesPerRow: 10,
-        skewSize: 1
+        skewSize: 1,
+        useAdditionalColors: true,
+        additionalColor1: 'rgba(143, 126, 244, 1)',
+        additionalColor2: 'rgba(12, 196, 142, 1)',
+        additionalColor3: 'rgba(201, 56, 169, 1)',
+        color1Percent: 30,
+        color2Percent: 20,
+        color3Percent: 40,
     }
 }
 
@@ -38,6 +45,13 @@ class myBanner {
         this.particlesColor = options.particlesColor;
         this.particlesColor2 = options.particlesColor2;
         this.currentColor = this.particlesColor;
+        this.useAdditionalColors = options.useAdditionalColors;
+        this.additionalColor1 = options.additionalColor1;
+        this.color1Percent = Math.min(100, Math.max(0, options.color1Percent));
+        this.additionalColor2 = options.additionalColor2;
+        this.color2Percent = Math.min(100, Math.max(0, options.color2Percent));
+        this.additionalColor3 = options.additionalColor3;
+        this.color3Percent = Math.min(100, Math.max(0, options.color3Percent));
         this.shadowColor = '';
         this.particles = [];
         // particles settings end
@@ -355,30 +369,53 @@ class myBanner {
             let linesCount = (this.transitionDirection === 'Left-Right' || this.transitionDirection === 'Right-Left') ? this.rows : this.cols;
             let x;
             let y;
+            let fill;
 
             for (let row = 0; row < linesCount; row++) {
-              for (let particle = 0; particle < particlesPerLine; particle++) {
-                y = this.particleHeight * row;
-                x = this.clipLine.currentXPos - this.particleWidth;
 
+                // use additional colors for particles
+                if (this.useAdditionalColors) {
+                    let rowsPercent = linesCount / 100;
+                    let part1 = Math.round(rowsPercent * this.color1Percent);
+                    let part2 = Math.round(rowsPercent * this.color2Percent);
+                    let part3 = Math.round(rowsPercent * this.color3Percent);
+                    console.log(part1, part2, part3);
+                    console.log(linesCount);
 
-                if (this.transitionDirection === 'Left-Right' || this.transitionDirection === 'Right-Left') {
-                    // x = this.clipLine.startXPos - this.particleWidth;
-                } else if (this.transitionDirection === 'Up-Down' || this.transitionDirection === 'Bottom-Up') {
-                    x = this.particleWidth * row;
-                    //TODO: Finish the vertical version 
-                } 
+                    if (part1 && row + 1 <= part1) {
+                        fill = this.additionalColor1;
+                    } else if (part2 && row + 1 <= part1 + part2) {
+                        fill = this.additionalColor2;
+                    } else if (part3 && row + 1 <= part1 + part2 + part3) {
+                        fill = this.additionalColor3;
+                    } else {
+                        fill = this.currentColor;
+                    }
+                } else {
+                    fill = this.currentColor;
+                }
 
-                this.particles.push({
-                    startXPosition: x,
-                    startYPos: 0,
-                    x: x,
-                    y: y,
-                    row,
-                    fill: this.currentColor,
-                    speed: (Math.random() * (this.w * 0.05) + this.w * 0.05)
-                });
-              }
+                for (let particle = 0; particle < particlesPerLine; particle++) {
+                    y = this.particleHeight * row;
+                    x = this.clipLine.currentXPos - this.particleWidth;
+
+                    if (this.transitionDirection === 'Left-Right' || this.transitionDirection === 'Right-Left') {
+                        
+                    } else if (this.transitionDirection === 'Up-Down' || this.transitionDirection === 'Bottom-Up') {
+                        x = this.particleWidth * row;
+                        //TODO: Finish the vertical version 
+                    } 
+
+                    this.particles.push({
+                        startXPosition: x,
+                        startYPos: 0,
+                        x: x,
+                        y: y,
+                        row,
+                        fill: fill,
+                        speed: (Math.random() * (this.w * 0.05) + this.w * 0.05)
+                    });
+                }
             }
 
         }
@@ -400,11 +437,7 @@ class myBanner {
                 if (this.debug) {
                     this.ctx.fillStyle = 'rgba(255, 0,0, .5)';
                 } else {
-                    if (this.animationType === 'Transition 2') {
-                        this.ctx.fillStyle = this.currentColor;
-                    } else {
-                        this.ctx.fillStyle = fill;
-                    }
+                    this.ctx.fillStyle = fill;
                 }
                 
                 this.ctx.save();
@@ -510,7 +543,8 @@ class myBanner {
 
                         if (this.currentTime >= this.imageShowTime) {
                             // fill with color
-                            this.currentColor = this.currentImage % 2 === 0 ? this.particlesColor : this.particlesColor2;
+                            this.currentColor = this.currentImage % 2 === 0 ? this.particlesColor2 : this.particlesColor;
+                            p.fill = p.fill === this.particlesColor ? this.particlesColor2 : p.fill === this.particlesColor2 ? this.particlesColor : p.fill;
                             this.calculateShadowColor();
                         }
                     }
@@ -575,7 +609,7 @@ class myBanner {
 
     drawShadow(side) {
         let shadowHolderOffet = 10;
-        let shadowWidth = Math.min(this.particleWidth / 2, this.w * 0.1);
+        let shadowWidth = this.particleWidth;
         
         this.ctx.shadowOffsetY = 0;
         this.ctx.shadowBlur = 15;
@@ -793,6 +827,7 @@ debugInput.addEventListener('change', (e) => {
         banner.debug = debugInput.checked;
     }
 });
+
 window.addEventListener('keydown', (e) => {
     if (e.code === 'Space') {
         paused = !paused;
@@ -821,18 +856,22 @@ function addSettings() {
     const imageShowTime = +document.getElementById('image-duration').value;
     const particlesPerRow = +document.getElementById('particles-per-row').value;
     const particlesPerColumn = +document.getElementById('particles-per-column').value;
-    let particlesColor = document.getElementById('particles-color').value;
-    let particlesColor2 = document.getElementById('particles-color2').value;
+    const particlesColor = convertHexToRgbA(document.getElementById('particles-color').value, 1);
+    const particlesColor2 = convertHexToRgbA(document.getElementById('particles-color2').value, 1) ;
     const skewSize = +document.getElementById('skew').value
+    const useAdditionalColors = document.getElementById('useColors').checked;
+    const additionalColor1 = convertHexToRgbA(document.getElementById('additional-color1').value, 1);
+    const color1Percent = +document.getElementById('color1Percent').value;
+    const additionalColor2 = convertHexToRgbA(document.getElementById('additional-color2').value, 1);
+    const color2Percent = +document.getElementById('color2Percent').value;
+    const additionalColor3 = convertHexToRgbA(document.getElementById('additional-color3').value, 1);
+    const color3Percent = +document.getElementById('color3Percent').value;
     
+
     if (banner) {
         banner.destroy();
         banner = {};
     }
-
-    particlesColor = convertHexToRgbA(particlesColor, 1);
-    particlesColor2 = convertHexToRgbA(particlesColor2, 1);
-
 
     playBtn.classList.add('active');
     pauseBtn.classList.remove('active');
@@ -847,7 +886,14 @@ function addSettings() {
         particlesPerColumn,
         particlesColor,
         particlesColor2,
-        skewSize
+        skewSize,
+        useAdditionalColors,
+        additionalColor1,
+        additionalColor2,
+        additionalColor3,
+        color1Percent,
+        color2Percent,
+        color3Percent
     }
 
     banner = new myBanner(Widget.properties, false);
