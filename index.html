@@ -12,11 +12,11 @@
         <div class="settings" id="settings">
             <div class="debug-holder">
                 <label>
-                    <input type="checkbox" id="debug-input"/>
+                    <input type="checkbox" id="debug-input" checked/>
                     Enable debug mode
                 </label>
             </div>
-            <input type="checkbox" id="toggler" checked>
+            <input type="checkbox" id="toggler">
             <label for="toggler">Show settings</label>
 
             <div class="settings-wrapper">
@@ -33,10 +33,10 @@
     
                 <div>Transition direction (only for 2nd and 3rd transitions)</div>
                 <select id="direction">
-                    <option value="Right-Left" selected>Right-Left</option>
+                    <option value="Right-Left" >Right-Left</option>
                     <option value="Left-Right" >Left-Right</option>
-                    <!-- <option value="Up-Down">Up-Down</option>
-                    <option value="Bottom-Up">Bottom-up</option> -->
+                    <option value="Up-Down" selected>Up-Down</option>
+                    <option value="Bottom-Up" >Bottom-Up</option>
                     <!-- <option value="Center-Out">Center - Out</option>
                     <option value="Out-center">Out - center</option> -->
                 </select>
@@ -49,10 +49,10 @@
 
 
                 <div>Particles per row</div>
-                <input type="number" value="5" id="particles-per-row">
+                <input type="number" value="10" id="particles-per-row">
     
                 <div>Particles per column</div>
-                <input type="number" value="7" id="particles-per-column">
+                <input type="number" value="10" id="particles-per-column">
 
                 <div>Skew size</div>
                 <input type="number" id="skew" value="-1">
