@@ -358,14 +358,14 @@ class myBanner {
 
                     let endXPosition = x;
                     let endYPosition = y;
-                    let rowOffset = offsetXStep * (totalRows - row - 1);
-                    let columnOffset = offsetYStep * (totalColumns - column - 1)
-                    let pathX = this.w + additionalColumnsOffset + rowOffset;
-                    let pathY = this.h + additionalRowsOffset + columnOffset;
+                    let particleRowOffset = offsetXStep * (totalRows - row - 1);
+                    let particleColumnOffset = offsetYStep * (totalColumns - column - 1)
+                    let pathX = this.w + additionalColumnsOffset + particleRowOffset;
+                    let pathY = this.h + additionalRowsOffset + particleColumnOffset;
                     let colOffset;
+                    let rowOffset;
                     let fill = 'transparent';
                     
-                    // TODO: FINISH TRANSITION 3
                     if (this.animationType === 'Transition 3') {
                         fill = this.currentColor;
                         // move particles to start position outside of the screen;
@@ -375,7 +375,7 @@ class myBanner {
                             pathX += colOffset;
 
                             if (this.skewSize > 0) {
-                                pathX += this.skewSizeAbs + this.skewSize * (this.rows - row - 1);
+                                pathX += this.skewSizeAbs + this.skewSize * (totalRows - row - 1);
                             }
 
                             x -= pathX;
@@ -390,9 +390,26 @@ class myBanner {
                             
                             x += pathX;
                         } else if (this.transitionDirection === 'Up-Down') {
+                            rowOffset = offsetYStep * (totalRows - row -1);
+
+                            pathY += rowOffset;
+
+                            if (this.skewSize > 0) {
+                                pathY += this.skewSizeAbs + this.skewSize * (totalColumns - column - 1);
+                            }
+
+                            y -= pathY;
 
                         } else if (this.transitionDirection === 'Bottom-Up') {
+                            rowOffset = offsetYStep * row;
 
+                            pathY += rowOffset;
+
+                            if (this.skewSize < 0) {
+                                pathY += this.skewSizeAbs;
+                            }
+
+                            y += pathY;
                         }
                     }
 
@@ -407,10 +424,6 @@ class myBanner {
                         pathY,
                         xStep: pathX / (this.transitionStep / (1000 / this.frameRate)),
                         yStep: pathY / (this.transitionStep / (1000 / this.frameRate)),
-                        totalColumns: totalColumns,
-                        totalRows: totalRows,
-                        col: column,
-                        row,
                         liveTime: this.currentTime,
                         fill
                     });
@@ -535,9 +548,8 @@ class myBanner {
                     this.ctx.fillStyle = 'rgba(255, 0,0, .5)';
                 } else {
                     this.ctx.fillStyle = fill;
-                } 
+                }
 
-                // this.drawHorizontalParticle(x, y);
                 if (this.transitionDirection === 'Left-Right' || this.transitionDirection === 'Right-Left') {
                     this.drawHorizontalParticle(x, y);
                 } else if (this.transitionDirection === 'Up-Down' || this.transitionDirection === 'Bottom-Up'){
@@ -644,10 +656,11 @@ class myBanner {
                 }
             } else if(this.animationType === 'Transition 3') {
                 let xStep = p.xStep;
+                let yStep = p.yStep;
                 let startTime = this.imageShowTime - this.transitionTime + this.transitionStep;
                 let enterUntil = startTime + this.transitionStep;
                 let outUntil = this.imageShowTime;
-                let endTime = this.imageShowTime + this.transitionStep;
+                let endTime = outUntil + this.transitionStep;
                 
                 if (p.liveTime >= startTime) {
                     if (p.liveTime <= enterUntil) {
@@ -655,19 +668,28 @@ class myBanner {
                             p.x += xStep;
                         } else if (this.transitionDirection === 'Right-Left') {
                             p.x -= xStep;
+                        } else if (this.transitionDirection === 'Up-Down') {
+                            p.y += yStep;
+                        } else if (this.transitionDirection === 'Bottom-Up') {
+                            p.y -= yStep;
                         }
                     } else if (p.liveTime >= outUntil) {
-                        xStep = this.particles[(this.particles.length - 1)  - i].xStep * 1.1;
+                        xStep = this.particles[this.particles.length - 1 - i].xStep * 1.1;
+                        yStep = this.particles[this.particles.length - 1 - i].yStep * 1.1;
     
                         if (this.transitionDirection === 'Left-Right') {
                             p.x += xStep;
                         } else if (this.transitionDirection === 'Right-Left') {
                             p.x -= xStep;
+                        } else if (this.transitionDirection === 'Up-Down') {
+                            p.y += yStep;
+                        } else if (this.transitionDirection === 'Bottom-Up') {
+                            p.y -= yStep;
                         }
     
                         if (p.liveTime >= endTime) {
-                            p.y = p.startYPosition;
                             p.x = p.startXPosition;
+                            p.y = p.startYPosition;
                             p.liveTime = this.currentTime;
                         }
                     } else {
