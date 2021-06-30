@@ -429,7 +429,6 @@ class myBanner {
                     });
                 }
             }
-        //TODO: FINISH THE TRANSITION 2
         } else if (this.animationType === 'Transition 2') {
             let particlesPerLine = 1;
             let linesCount = (this.transitionDirection === 'Left-Right' || this.transitionDirection === 'Right-Left') ? this.rows : this.cols;
@@ -485,6 +484,7 @@ class myBanner {
                 }
             }
 
+            // shuffle the colors
             if (this.useAdditionalColors) {
                 let linesPositionsArray;
 
