@@ -327,46 +327,72 @@ class myBanner {
 
     createParticles() {
         if (this.animationType === 'Transition 1' || this.animationType === 'Transition 3') {
-            let additionalColumns = Math.ceil((this.skewSizeAbs * this.rows) / (this.particleWidth)) * 2;
-            let totalColumns = this.cols + additionalColumns;
-            let offsetStep = this.particleWidth * 1.5;
+            let additionalColumns = 0;
+            let additionalRows = 0;
 
-            for(let row = 0; row < this.rows; row++) {
+            if (this.transitionDirection === 'Left-Right' || this.transitionDirection === 'Right-Left') {
+                additionalColumns = Math.ceil((this.skewSizeAbs * this.rows) / this.particleWidth) * 2;
+            } else if (this.transitionDirection === 'Up-Down' || this.transitionDirection === 'Bottom-Up') {
+                additionalRows = Math.ceil((this.skewSizeAbs * this.cols) / this.particleHeight) * 2;
+            }
+            let totalRows = this.rows + additionalRows;
+            let totalColumns = this.cols + additionalColumns;
+            let offsetXStep = this.particleWidth * 1.5;
+            let offsetYStep = this.particleHeight * 1.5;
+
+            for(let row = 0; row < totalRows; row++) {
                 for(let column = 0; column < totalColumns; column++) {
                     let additionalColumnsOffset = this.particleWidth * (additionalColumns/2);
-                    let skewOffset = (this.skewSize * (this.rows - row - 1));
+                    let additionalRowsOffset = this.particleHeight * (additionalRows/2);
+                    let skewXOffset = this.skewSize * (totalRows - row - 1);
+                    let skewYOffset = this.skewSize * (totalColumns - column - 1);
 
-                    let x = this.particleWidth * column - additionalColumnsOffset + skewOffset;
+                    let x = this.particleWidth * column;
                     let y = this.particleHeight * row;
+
+                    if (this.transitionDirection === 'Left-Right' || this.transitionDirection === 'Right-Left') {
+                        x = x - additionalColumnsOffset + skewXOffset;
+                    } else if (this.transitionDirection === 'Up-Down' || this.transitionDirection === 'Bottom-Up') {
+                        y = y - additionalRowsOffset + skewYOffset;
+                    }
+
                     let endXPosition = x;
                     let endYPosition = y;
-                    let rowOffset = offsetStep * (this.rows - row - 1);
-                    let path = this.w + additionalColumnsOffset + rowOffset;
+                    let rowOffset = offsetXStep * (totalRows - row - 1);
+                    let columnOffset = offsetYStep * (totalColumns - column - 1)
+                    let pathX = this.w + additionalColumnsOffset + rowOffset;
+                    let pathY = this.h + additionalRowsOffset + columnOffset;
                     let colOffset;
                     let fill = 'transparent';
                     
+                    // TODO: FINISH TRANSITION 3
                     if (this.animationType === 'Transition 3') {
                         fill = this.currentColor;
                         // move particles to start position outside of the screen;
                         if (this.transitionDirection === 'Left-Right') {
-                            colOffset = offsetStep * (totalColumns - column - 1);
-                            path += colOffset;
+                            colOffset = offsetXStep * (totalColumns - column - 1);
+
+                            pathX += colOffset;
 
                             if (this.skewSize > 0) {
-                                path += this.skewSizeAbs + this.skewSize * (this.rows - row - 1);
+                                pathX += this.skewSizeAbs + this.skewSize * (this.rows - row - 1);
                             }
 
-                            x -= path;
+                            x -= pathX;
                         } else if (this.transitionDirection === 'Right-Left') {
-                            colOffset = offsetStep * column;
+                            colOffset = offsetXStep * column;
 
-                            path += colOffset;
+                            pathX += colOffset;
 
                             if (this.skewSize < 0) {
-                                path += this.skewSizeAbs;
+                                pathX += this.skewSizeAbs;
                             }
                             
-                            x += path;
+                            x += pathX;
+                        } else if (this.transitionDirection === 'Up-Down') {
+
+                        } else if (this.transitionDirection === 'Bottom-Up') {
+
                         }
                     }
 
@@ -377,16 +403,20 @@ class myBanner {
                         endYPosition,
                         x: x,
                         y: y,
-                        path,
-                        xStep: path / (this.transitionStep / (1000 / this.frameRate)),
-                        row,
+                        pathX,
+                        pathY,
+                        xStep: pathX / (this.transitionStep / (1000 / this.frameRate)),
+                        yStep: pathY / (this.transitionStep / (1000 / this.frameRate)),
                         totalColumns: totalColumns,
+                        totalRows: totalRows,
                         col: column,
+                        row,
                         liveTime: this.currentTime,
                         fill
                     });
                 }
             }
+        //TODO: FINISH THE TRANSITION 2
         } else if (this.animationType === 'Transition 2') {
             let particlesPerLine = 1;
             let linesCount = (this.transitionDirection === 'Left-Right' || this.transitionDirection === 'Right-Left') ? this.rows : this.cols;
@@ -505,15 +535,14 @@ class myBanner {
                     this.ctx.fillStyle = 'rgba(255, 0,0, .5)';
                 } else {
                     this.ctx.fillStyle = fill;
-                }
+                } 
 
-                this.drawHorizontalParticle(x, y);
-                //TODO: finish vertical particle
-                // if (this.transitionDirection === 'Left-Right' || this.transitionDirection === 'Right-Left') {
-                //     this.drawHorizontalParticle(x, y);
-                // } else if (this.transitionDirection === 'Up-Down' || this.transitionDirection === 'Bottom-Up'){
-                //     this.darwVerticalParticle(x,y);
-                // }
+                // this.drawHorizontalParticle(x, y);
+                if (this.transitionDirection === 'Left-Right' || this.transitionDirection === 'Right-Left') {
+                    this.drawHorizontalParticle(x, y);
+                } else if (this.transitionDirection === 'Up-Down' || this.transitionDirection === 'Bottom-Up'){
+                    this.darwVerticalParticle(x,y);
+                }
             }
           
             if (this.debug) {
@@ -777,16 +806,16 @@ class myBanner {
         }
         this.ctx.restore();
 
-        // if (this.debug) {
-        //     this.ctx.save();
-        //     this.ctx.strokeStyle = 'purple';
-        //     this.ctx.lineWidth = 3;
-        //     this.ctx.beginPath(); 
-        //     this.ctx.moveTo(this.clipLine.clipTopXPoint + 2, 0);
-        //     this.ctx.lineTo(this.clipLine.clipBottomXPoint + 2, this.h);
-        //     this.ctx.stroke(); 
-        //     this.ctx.restore();
-        // }
+        if (this.debug) {
+            this.ctx.save();
+            this.ctx.strokeStyle = 'purple';
+            this.ctx.lineWidth = 3;
+            this.ctx.beginPath(); 
+            this.ctx.moveTo(this.clipLine.clipTopXPoint + 2, 0);
+            this.ctx.lineTo(this.clipLine.clipBottomXPoint + 2, this.h);
+            this.ctx.stroke(); 
+            this.ctx.restore();
+        }
     }
 
     updateClipLine() {
