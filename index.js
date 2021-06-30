@@ -470,8 +470,7 @@ class myBanner {
                     } else if (this.transitionDirection === 'Up-Down' || this.transitionDirection === 'Bottom-Up') {
                         speed = (Math.random() * (this.h * 0.05) + this.h * 0.05);
                         x = this.particleWidth * row;
-                        // y = this.clipLine.currentYPos - this.particleHeight;
-                        y = this.h/2;
+                        y = this.clipLine.currentYPos - this.particleHeight;
                     } 
 
                     this.particles.push({
@@ -596,16 +595,21 @@ class myBanner {
                     }
                 }
             } else if (this.animationType === 'Transition 2') {
-                let acceleration;
+                let accelerationX = 0;
+                let accelerationY = 0;
 
                 if (this.transitionDirection === 'Left-Right') {
-                    acceleration = Math.abs(p.x / this.w * 10) + 0.1;
+                    accelerationX = Math.abs(p.x / this.w * 10) + 0.1;
                 } else if (this.transitionDirection === 'Right-Left') {
-                    acceleration = Math.abs(Math.abs(p.x / this.w - 1) * 10) + 0.1;
+                    accelerationX = Math.abs(Math.abs(p.x / this.w - 1) * 10) + 0.1;
+                } else if (this.transitionDirection === 'Up-Down') {
+                    accelerationY = Math.abs(p.y / this.h * 10) + 0.1;
+                } else if (this.transitionDirection === 'Bottom-Up') {
+                    accelerationY = Math.abs(Math.abs(p.y / this.h - 1) * 10) + 0.1;
                 }
 
-                let xStep = p.speed + acceleration;
-                let yStep = p.speed + acceleration;
+                let xStep = p.speed + accelerationX;
+                let yStep = p.speed + accelerationY;
                 let isOverEdge;
 
                 // set values according to direction of the animation
@@ -621,13 +625,13 @@ class myBanner {
                         break;
                     case 'Up-Down':
                         xStep = 0;
-                        isOverEdge = p.y > this.h;
+                        isOverEdge = p.y > this.h + this.skewSizeAbs;
                         break;
-                    case 'Bottom-up':
+                    case 'Bottom-Up':
                         xStep = 0;
                         yStep *= -1;
 
-                        isOverEdge = p.y < this.particleHeight * -1;
+                        isOverEdge = p.y < (this.particleHeight + this.skewSizeAbs) * -1;
                         break;
                 }
 
@@ -637,12 +641,20 @@ class myBanner {
                     p.y += yStep;
 
                     if (isOverEdge) {
-                        p.x = this.clipLine.currentXPos;
+                        if (this.transitionDirection === 'Left-Right' || this.transitionDirection === 'Right-Left') {
+                            p.x = this.clipLine.currentXPos;
+                        } else if (this.transitionDirection === 'Up-Down' || this.transitionDirection === 'Bottom-Up') {
+                            p.y = this.clipLine.currentYPos;
+                        }
 
                         if (this.transitionDirection === 'Left-Right') {
                             p.x += this.skewSizeAbs; 
                         } else if (this.transitionDirection === 'Right-Left') {
                             p.x -= this.particleWidth;
+                        } else if (this.transitionDirection === 'Up-Down') {
+                            p.y += this.skewSizeAbs;
+                        } else if (this-this.transitionDirection === 'Bottom-Up') {
+                            p.y -= this.particleHeight;
                         }
 
                         if (this.currentTime >= this.imageShowTime) {
@@ -827,17 +839,6 @@ class myBanner {
             this.drawShadow('Bottom');
         }
         this.ctx.restore();
-
-        if (this.debug) {
-            this.ctx.save();
-            this.ctx.strokeStyle = 'purple';
-            this.ctx.lineWidth = 3;
-            this.ctx.beginPath(); 
-            this.ctx.moveTo(this.clipLine.clipTopXPoint + 2, 0);
-            this.ctx.lineTo(this.clipLine.clipBottomXPoint + 2, this.h);
-            this.ctx.stroke(); 
-            this.ctx.restore();
-        }
     }
 
     updateClipLine() {
@@ -848,12 +849,12 @@ class myBanner {
 
             //vertical move
             this.clipLine.clipLeftYPoint = this.clipLine.currentYPos;
-            this.clipLine.clipRightYPoint = this.clipLine.currentYPos + this.skewSizeAbs + this.cols;
+            this.clipLine.clipRightYPoint = this.clipLine.currentYPos + this.skewSizeAbs * this.cols;
         } else if (this.skewSize > 0) {
             this.clipLine.clipTopXPoint = this.clipLine.currentXPos + this.skewSizeAbs * this.rows;
             this.clipLine.clipBottomXPoint = this.clipLine.currentXPos;
 
-            this.clipLine.clipLeftYPoint = this.clipLine.currentYPos + this.skewSizeAbs + this.cols;
+            this.clipLine.clipLeftYPoint = this.clipLine.currentYPos + this.skewSizeAbs * this.cols;
             this.clipLine.clipRightYPoint = this.clipLine.currentYPos;
         } else {
             this.clipLine.clipTopXPoint = this.clipLine.clipBottomXPoint = this.clipLine.currentXPos;
