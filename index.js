@@ -25,6 +25,14 @@ const Widget = {
     }
 }
 
+const LTR = 'Left-Right';
+const RTL = 'Right-Left';
+const UD = 'Up-Down';
+const BU = 'Bottom-Up';
+const TR1 = 'Transition 1';
+const TR2 = 'Transition 2';
+const TR3 = 'Transition 3';
+
 class myBanner {
     constructor(options, debug) {
         this.frameRate = 60;
@@ -36,7 +44,7 @@ class myBanner {
 
         //transition options start
         this.transitionTime = +options.transitionTime > 0 ? +options.transitionTime * 100 : 1000;
-        this.transitionStep = this.transitionTime / 3;
+        this.transitionTimeThird = this.transitionTime / 3;
         //transition options end
 
         // particles settings start
@@ -130,12 +138,62 @@ class myBanner {
         this.particles = [];
         this.createParticles();
         this.createClipLine();
-    }  
+    }
+
+    isHorizontal() {
+        return this.transitionDirection === LTR || this.transitionDirection === RTL;
+    }
+
+    isVertical() {
+        return this.transitionDirection === UD || this.transitionDirection === BU;
+    }
+
+    isLTR() {
+        return this.transitionDirection === LTR;
+    }
+
+    isRTL() {
+        return this.transitionDirection === RTL;
+    }
+
+    isUD() {
+        return this.transitionDirection === UD;
+    }
+
+    isBU() {
+        return this.transitionDirection === BU;
+    }
+
+    isTR1() {
+        return this.animationType === TR1;
+    }
+
+    isTR2() {
+        return this.animationType === TR2;
+    }
+
+    isTR3() {
+        return this.animationType === TR3;
+    }
+
+    msPerFrame() {
+        return 1000 / this.frameRate;
+    }
+
+    // transition time part per frame
+    frameStep() {
+        return this.transitionTime / this.msPerFrame();
+    }
+
+    // short transition part per frame
+    frameShortStep() {
+        return this.transitionTimeThird / this.msPerFrame();
+    }
 
     calcSkewSize() {
-        if (this.transitionDirection === 'Left-Right' || this.transitionDirection === 'Right-Left') {
+        if (this.isHorizontal()) {
             this.skewSize = this.particleWidth * this.skewPercent;
-        } else if (this.transitionDirection === 'Up-Down' || this.transitionDirection === 'Bottom-Up') {
+        } else if (this.isVertical()) {
             this.skewSize = this.particleHeight * this.skewPercent;
         }
         
@@ -143,15 +201,13 @@ class myBanner {
     }
 
     updateCurrentTime() {
-        let timeStep = 1000 / this.frameRate;
-
         this.changeCurrentImageOnLoop();
 
         if (this.currentTime > this.imageShowTime) {
             this.currentTime = 0;
         }
 
-        this.currentTime += timeStep;
+        this.currentTime += this.msPerFrame();
     }
 
     calculateShadowColor() {
@@ -219,14 +275,14 @@ class myBanner {
         let current = this.images[this.currentImage];
         let next = this.images[(this.currentImage + 1) % this.images.length];
 
-        if (this.animationType === 'Transition 1') {
+        if (this.isTR1()) {
             [next, current].forEach(image => {
                 this.ctx.save();
                 this.ctx.globalAlpha = image.opacity;
                 this.ctx.drawImage(image.img, 0, 0, this.w, this.h);
                 this.ctx.restore();
             });
-        } else if (this.animationType === 'Transition 2') {
+        } else if (this.isTR2()) {
             this.ctx.fillStyle = 'transparent';
 
             // draw firstImage start
@@ -237,19 +293,19 @@ class myBanner {
                 this.ctx.strokeStyle = 'orange';
             }
 
-            if (this.transitionDirection === 'Left-Right' || this.transitionDirection === 'Right-Left') {
+            if (this.isHorizontal()) {
                 this.drawLeftClip();
-            } else if (this.transitionDirection === 'Up-Down' || this.transitionDirection === 'Bottom-Up') {
+            } else if (this.isVertical()) {
                 this.drawBottomClip();
             }
             
-            if (this.transitionDirection === 'Left-Right' || this.transitionDirection === 'Bottom-Up' ) {
+            if (this.isHorizontal() ) {
                 this.ctx.drawImage(next.img, 0, 0, this.w, this.h);
 
                 if (this.debug) {
                     this.ctx.strokeText('Next', 20, this.h/2);
                 }
-            } else if (this.transitionDirection === 'Right-Left' || this.transitionDirection === 'Up-Down') {
+            } else if (this.isVertical()) {
                 this.ctx.drawImage(current.img, 0, 0, this.w, this.h);
                 if (this.debug) {
                     this.ctx.strokeText('Current', 20, this.h/2);
@@ -265,19 +321,19 @@ class myBanner {
                 this.ctx.strokeStyle = 'orange';
             }
 
-            if (this.transitionDirection === 'Left-Right' || this.transitionDirection === 'Right-Left') {
+            if (this.isHorizontal()) {
                 this.drawRightClip();
-            } else if (this.transitionDirection === 'Up-Down' || this.transitionDirection === 'Bottom-Up') {
+            } else if (this.isVertical()) {
                 this.drawTopClip();
             }
 
-            if (this.transitionDirection === 'Left-Right' || this.transitionDirection === 'Bottom-Up') {
+            if (this.isLTR() || this.isBU()) {
                 this.ctx.drawImage(current.img, 0, 0, this.w, this.h);
                 
                 if (this.debug) {
                     this.ctx.strokeText('Current', this.w - 200, this.h/2);
                 }
-            } else if (this.transitionDirection === 'Right-Left' || this.transitionDirection === 'Up-Down') {
+            } else if (this.isRTL() || this.isUD()) {
                 this.ctx.drawImage(next.img, 0, 0, this.w, this.h);
                 
                 if (this.debug) {
@@ -285,7 +341,7 @@ class myBanner {
                 }
             }
             this.ctx.restore();
-        } else if (this.animationType === 'Transition 3') {
+        } else if (this.isTR3()) {
             this.ctx.drawImage(current.img, 0, 0, this.w, this.h);
         }
 
@@ -304,7 +360,7 @@ class myBanner {
         let current = this.images[this.currentImage];
         let next = this.images[(this.currentImage + 1) % this.images.length];
 
-        if (this.animationType === 'Transition 1') {
+        if (this.animationType === TR1) {
             if (this.currentTime >= (this.imageShowTime - this.transitionTime)) {
                 const changeOpacityStep = 1 / (this.transitionTime / (1000/this.frameRate));
 
@@ -326,13 +382,13 @@ class myBanner {
     }
 
     createParticles() {
-        if (this.animationType === 'Transition 1' || this.animationType === 'Transition 3') {
+        if (this.isTR1() || this.isTR3()) {
             let additionalColumns = 0;
             let additionalRows = 0;
 
-            if (this.transitionDirection === 'Left-Right' || this.transitionDirection === 'Right-Left') {
+            if (this.isHorizontal()) {
                 additionalColumns = Math.ceil((this.skewSizeAbs * this.rows) / this.particleWidth) * 2;
-            } else if (this.transitionDirection === 'Up-Down' || this.transitionDirection === 'Bottom-Up') {
+            } else if (this.isVertical()) {
                 additionalRows = Math.ceil((this.skewSizeAbs * this.cols) / this.particleHeight) * 2;
             }
             let totalRows = this.rows + additionalRows;
@@ -350,9 +406,9 @@ class myBanner {
                     let x = this.particleWidth * column;
                     let y = this.particleHeight * row;
 
-                    if (this.transitionDirection === 'Left-Right' || this.transitionDirection === 'Right-Left') {
+                    if (this.isHorizontal()) {
                         x = x - additionalColumnsOffset + skewXOffset;
-                    } else if (this.transitionDirection === 'Up-Down' || this.transitionDirection === 'Bottom-Up') {
+                    } else if (this.isVertical()) {
                         y = y - additionalRowsOffset + skewYOffset;
                     }
 
@@ -366,10 +422,10 @@ class myBanner {
                     let rowOffset;
                     let fill = 'transparent';
                     
-                    if (this.animationType === 'Transition 3') {
+                    if (this.isTR3()) {
                         fill = this.currentColor;
                         // move particles to start position outside of the screen;
-                        if (this.transitionDirection === 'Left-Right') {
+                        if (this.transitionDirection === LTR) {
                             colOffset = offsetXStep * (totalColumns - column - 1);
 
                             pathX += colOffset;
@@ -379,7 +435,7 @@ class myBanner {
                             }
 
                             x -= pathX;
-                        } else if (this.transitionDirection === 'Right-Left') {
+                        } else if (this.transitionDirection === RTL) {
                             colOffset = offsetXStep * column;
 
                             pathX += colOffset;
@@ -389,7 +445,7 @@ class myBanner {
                             }
                             
                             x += pathX;
-                        } else if (this.transitionDirection === 'Up-Down') {
+                        } else if (this.transitionDirection === UD) {
                             rowOffset = offsetYStep * (totalRows - row -1);
 
                             pathY += rowOffset;
@@ -400,7 +456,7 @@ class myBanner {
 
                             y -= pathY;
 
-                        } else if (this.transitionDirection === 'Bottom-Up') {
+                        } else if (this.transitionDirection === BU) {
                             rowOffset = offsetYStep * row;
 
                             pathY += rowOffset;
@@ -422,16 +478,16 @@ class myBanner {
                         y: y,
                         pathX,
                         pathY,
-                        xStep: pathX / (this.transitionStep / (1000 / this.frameRate)),
-                        yStep: pathY / (this.transitionStep / (1000 / this.frameRate)),
+                        xStep: pathX / this.frameShortStep(),
+                        yStep: pathY / this.frameShortStep(),
                         liveTime: this.currentTime,
                         fill
                     });
                 }
             }
-        } else if (this.animationType === 'Transition 2') {
+        } else if (this.isTR2()) {
             let particlesPerLine = 1;
-            let linesCount = (this.transitionDirection === 'Left-Right' || this.transitionDirection === 'Right-Left') ? this.rows : this.cols;
+            let linesCount = (this.isHorizontal()) ? this.rows : this.cols;
             let x;
             let y;
             let fill;
@@ -463,10 +519,10 @@ class myBanner {
                     y = this.particleHeight * row;
                     x = this.clipLine.currentXPos - this.particleWidth;
 
-                    if (this.transitionDirection === 'Left-Right' || this.transitionDirection === 'Right-Left') {
+                    if (this.isHorizontal()) {
                         speed = (Math.random() * (this.w * 0.05) + this.w * 0.05);
                         
-                    } else if (this.transitionDirection === 'Up-Down' || this.transitionDirection === 'Bottom-Up') {
+                    } else if (this.isVertical()) {
                         speed = (Math.random() * (this.h * 0.05) + this.h * 0.05);
                         x = this.particleWidth * row;
                         y = this.clipLine.currentYPos - this.particleHeight;
@@ -549,9 +605,9 @@ class myBanner {
                     this.ctx.fillStyle = fill;
                 }
 
-                if (this.transitionDirection === 'Left-Right' || this.transitionDirection === 'Right-Left') {
+                if (this.isHorizontal()) {
                     this.drawHorizontalParticle(x, y);
-                } else if (this.transitionDirection === 'Up-Down' || this.transitionDirection === 'Bottom-Up'){
+                } else if (this.isVertical()){
                     this.darwVerticalParticle(x,y);
                 }
             }
@@ -580,7 +636,7 @@ class myBanner {
 
     updateParticles() {
         this.particles.forEach((p, i) => {
-            if (this.animationType === 'Transition 1') {
+            if (this.isTR1()) {
                 if (p.liveTime > (this.imageShowTime - this.transitionTime)) {
                     if (p.fill === 'transparent') {
                         p.fill = Math.random() < 0.25 ? this.currentColor : 'transparent';
@@ -594,17 +650,17 @@ class myBanner {
                         }
                     }
                 }
-            } else if (this.animationType === 'Transition 2') {
+            } else if (this.isTR2()) {
                 let accelerationX = 0;
                 let accelerationY = 0;
 
-                if (this.transitionDirection === 'Left-Right') {
+                if (this.transitionDirection === LTR) {
                     accelerationX = Math.abs(p.x / this.w * 10) + 0.1;
-                } else if (this.transitionDirection === 'Right-Left') {
+                } else if (this.transitionDirection === RTL) {
                     accelerationX = Math.abs(Math.abs(p.x / this.w - 1) * 10) + 0.1;
-                } else if (this.transitionDirection === 'Up-Down') {
+                } else if (this.transitionDirection === UD) {
                     accelerationY = Math.abs(p.y / this.h * 10) + 0.1;
-                } else if (this.transitionDirection === 'Bottom-Up') {
+                } else if (this.transitionDirection === BU) {
                     accelerationY = Math.abs(Math.abs(p.y / this.h - 1) * 10) + 0.1;
                 }
 
@@ -614,20 +670,20 @@ class myBanner {
 
                 // set values according to direction of the animation
                 switch (this.transitionDirection) {
-                    case 'Left-Right':
+                    case LTR:
                         yStep = 0;
                         isOverEdge = p.x > this.w + this.skewSizeAbs;
                         break;
-                    case 'Right-Left':
+                    case RTL:
                         xStep *= -1;
                         yStep = 0;
                         isOverEdge = p.x < (this.particleWidth + this.skewSizeAbs) * -1;
                         break;
-                    case 'Up-Down':
+                    case UD:
                         xStep = 0;
                         isOverEdge = p.y > this.h + this.skewSizeAbs;
                         break;
-                    case 'Bottom-Up':
+                    case BU:
                         xStep = 0;
                         yStep *= -1;
 
@@ -641,19 +697,19 @@ class myBanner {
                     p.y += yStep;
 
                     if (isOverEdge) {
-                        if (this.transitionDirection === 'Left-Right' || this.transitionDirection === 'Right-Left') {
+                        if (this.isHorizontal()) {
                             p.x = this.clipLine.currentXPos;
-                        } else if (this.transitionDirection === 'Up-Down' || this.transitionDirection === 'Bottom-Up') {
+                        } else if (this.isVertical()) {
                             p.y = this.clipLine.currentYPos;
                         }
 
-                        if (this.transitionDirection === 'Left-Right') {
+                        if (this.transitionDirection === LTR) {
                             p.x += this.skewSizeAbs; 
-                        } else if (this.transitionDirection === 'Right-Left') {
+                        } else if (this.transitionDirection === RTL) {
                             p.x -= this.particleWidth;
-                        } else if (this.transitionDirection === 'Up-Down') {
+                        } else if (this.transitionDirection === UD) {
                             p.y += this.skewSizeAbs;
-                        } else if (this-this.transitionDirection === 'Bottom-Up') {
+                        } else if (this-this.transitionDirection === BU) {
                             p.y -= this.particleHeight;
                         }
 
@@ -666,36 +722,36 @@ class myBanner {
                         }
                     }
                 }
-            } else if(this.animationType === 'Transition 3') {
+            } else if(this.isTR3()) {
                 let xStep = p.xStep;
                 let yStep = p.yStep;
-                let startTime = this.imageShowTime - this.transitionTime + this.transitionStep;
-                let enterUntil = startTime + this.transitionStep;
+                let startTime = this.imageShowTime - this.transitionTime + this.transitionTimeThird;
+                let enterUntil = startTime + this.transitionTimeThird;
                 let outUntil = this.imageShowTime;
-                let endTime = outUntil + this.transitionStep;
+                let endTime = outUntil + this.transitionTimeThird;
                 
                 if (p.liveTime >= startTime) {
                     if (p.liveTime <= enterUntil) {
-                        if (this.transitionDirection === 'Left-Right') {   
+                        if (this.transitionDirection === LTR) {   
                             p.x += xStep;
-                        } else if (this.transitionDirection === 'Right-Left') {
+                        } else if (this.transitionDirection === RTL) {
                             p.x -= xStep;
-                        } else if (this.transitionDirection === 'Up-Down') {
+                        } else if (this.transitionDirection === UD) {
                             p.y += yStep;
-                        } else if (this.transitionDirection === 'Bottom-Up') {
+                        } else if (this.transitionDirection === BU) {
                             p.y -= yStep;
                         }
                     } else if (p.liveTime >= outUntil) {
                         xStep = this.particles[this.particles.length - 1 - i].xStep * 1.1;
                         yStep = this.particles[this.particles.length - 1 - i].yStep * 1.1;
     
-                        if (this.transitionDirection === 'Left-Right') {
+                        if (this.transitionDirection === LTR) {
                             p.x += xStep;
-                        } else if (this.transitionDirection === 'Right-Left') {
+                        } else if (this.transitionDirection === RTL) {
                             p.x -= xStep;
-                        } else if (this.transitionDirection === 'Up-Down') {
+                        } else if (this.transitionDirection === UD) {
                             p.y += yStep;
-                        } else if (this.transitionDirection === 'Bottom-Up') {
+                        } else if (this.transitionDirection === BU) {
                             p.y -= yStep;
                         }
     
@@ -712,7 +768,7 @@ class myBanner {
             }
 
             /* start counting of particle lifetime */
-            p.liveTime += 1000 / this.frameRate;
+            p.liveTime += this.msPerFrame();
         });
     }
 
@@ -801,18 +857,18 @@ class myBanner {
         let fromTop = 0 - (this.skewSizeAbs + this.cols + this.particleHeight + this.skewSizeAbs);
         let fromBottom = this.h + (this.particleHeight + this.skewSizeAbs + this.cols);
 
-        if (this.transitionDirection === 'Left-Right') {
+        if (this.transitionDirection === LTR) {
             this.clipLine.startXPos = fromLeft;
             this.clipLine.endXPos = fromRight;
 
-        } else if (this.transitionDirection === 'Right-Left') {
+        } else if (this.transitionDirection === RTL) {
             this.clipLine.startXPos = fromRight;
             this.clipLine.endXPos = fromLeft;
-        } else if (this.transitionDirection === 'Bottom-Up') {
+        } else if (this.transitionDirection === BU) {
             this.clipLine.startYPos = fromBottom;
             this.clipLine.endYPos = fromTop;
 
-        } else if (this.transitionDirection === 'Up-Down') {
+        } else if (this.transitionDirection === UD) {
             this.clipLine.startYPos = fromTop;
             this.clipLine.endYPos = fromBottom;
         }
@@ -825,16 +881,16 @@ class myBanner {
 
     drawClipLine() {
         this.ctx.save();
-        if (this.transitionDirection === 'Left-Right') {
+        if (this.transitionDirection === LTR) {
             this.drawLeftClip();
             this.drawShadow('Left');
-        } else if (this.transitionDirection === 'Right-Left') {
+        } else if (this.transitionDirection === RTL) {
             this.drawRightClip();
             this.drawShadow("Right");
-        } else if (this.transitionDirection === 'Up-Down') {
+        } else if (this.transitionDirection === UD) {
             this.drawTopClip();
             this.drawShadow('Top');
-        } else if (this.transitionDirection === 'Bottom-Up') {
+        } else if (this.transitionDirection === BU) {
             this.drawBottomClip();
             this.drawShadow('Bottom');
         }
@@ -862,28 +918,28 @@ class myBanner {
         }
 
         if (this.currentTime >= this.imageShowTime - (this.transitionTime / 3)) {
-            let clipXStep = this.clipLine.pathX / (this.transitionStep / (1000 / this.frameRate));
-            let clipYStep = this.clipLine.pathY / (this.transitionStep / (1000 / this.frameRate));
+            let clipXStep = this.clipLine.pathX / this.frameShortStep();
+            let clipYStep = this.clipLine.pathY / this.frameShortStep();
 
-            if (this.transitionDirection === 'Left-Right') {
+            if (this.transitionDirection === LTR) {
                 if (this.clipLine.currentXPos <= this.clipLine.endXPos - clipXStep) {
                     this.clipLine.currentXPos += clipXStep;
                 } else {
                     this.clipLine.currentXPos += this.clipLine.endXPos - this.clipLine.currentXPos;
                 }
-            } else if (this.transitionDirection === 'Right-Left') {
+            } else if (this.transitionDirection === RTL) {
                 if (this.clipLine.currentXPos >= this.clipLine.endXPos - clipXStep) {
                     this.clipLine.currentXPos -= clipXStep;
                 } else {
                     this.clipLine.currentXPos -= this.clipLine.currentXPos - this.clipLine.endXPos;
                 }
-            } else if (this.transitionDirection === 'Up-Down') {
+            } else if (this.transitionDirection === UD) {
                 if (this.clipLine.currentYPos <= this.clipLine.endYPos - clipYStep) {
                     this.clipLine.currentYPos += clipYStep;
                 } else {
                     this.clipLine.currentYPos += this.clipLine.endYPos - this.clipLine.currentYPos;
                 }
-            } else if (this.transitionDirection === 'Bottom-Up') {
+            } else if (this.transitionDirection === BU) {
                 if (this.clipLine.currentYPos >= this.clipLine.endYPos - clipYStep) {
                     this.clipLine.currentYPos -= clipYStep;
                 } else {
@@ -915,7 +971,7 @@ class myBanner {
 
         this.drawParticles(); 
 
-        if (this.animationType === 'Transition 2') {
+        if (this.isTR2()) {
             this.drawClipLine();
         }
     }
@@ -929,7 +985,7 @@ class myBanner {
 
         this.updateCurrentTime();
 
-        if (this.animationType === 'Transition 2') {
+        if (this.isTR2()) {
             this.updateClipLine();
         }
     }
