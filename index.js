@@ -479,12 +479,20 @@ class myBanner {
                         pathY,
                         xStep: pathX / this.frameShortStep(),
                         yStep: pathY / this.frameShortStep(),
+                        xBackStep: 0,
+                        yBackStep: 0,
                         liveTime: this.currentTime,
                         fill: this.currentColor,
                         draw,
                     });
                 }
             }
+
+            //add back speed for each particle
+            this.particles.forEach((p, i) => {
+                p.xBackStep = this.particles[this.particles.length - 1 - i].xStep * 1.1;
+                p.yBackStep = this.particles[this.particles.length - 1 - i].yStep * 1.1;
+            });
         } else if (this.isTR2()) {
             let particlesPerLine = 1;
             let linesCount = this.isHorizontal() ? this.rows : this.cols;
@@ -530,7 +538,7 @@ class myBanner {
             let part1 = Math.round(particlesPercent * this.color1Percent);
             let part2 = Math.round(particlesPercent * this.color2Percent);
             let part3 = Math.round(particlesPercent * this.color3Percent);
-            let linesPositionsArray = [];
+            let newDataArray = [];
 
             this.particles.forEach((p, i) => {
                 if (part1 && (i + 1 <= part1)) {
@@ -542,28 +550,40 @@ class myBanner {
                 } else {
                     p.fill = this.currentColor;
                 }
+                
+                if (this.isTR1() || this.isTR3()) {
+                    newDataArray.push({
+                        startXPosition: p.startXPosition,
+                        startYPosition: p.startYPosition,
+                        endXPosition: p.endXPosition,
+                        endYPosition: p.endYPosition,
+                        x: p.x, 
+                        y: p.y, 
+                        pathX: p.pathX,
+                        pathY: p.pathY, 
+                        xStep: p.xStep, 
+                        yStep: p.yStep,
+                        xBackStep: p.xBackStep,
+                        yBackStep: p.yBackStep
+                    });
+                } else if (this.isTR2()) {
+                    newDataArray.push({
+                        startXPosition: p.x,
+                        startYPosition: p.y,
+                        x: p.x,
+                        y: p.y,
+                        speed: p.speed
+                    });
+                }
 
-                linesPositionsArray.push({x: p.x, y: p.y});
             });
 
-            linesPositionsArray = linesPositionsArray.sort(() => Math.random() - 0.5);
+            newDataArray = newDataArray.sort(() => Math.random() - 0.5);
 
-            linesPositionsArray.forEach(({x, y}, i) => {
-                // this.particles[i].x = x;
-                // this.particles[i].y = y;
-                // this.particles[i].startXPosition = x;
-                // this.particles[i].startYPosition = y;
-                // this.particles[i].endXPosition = x;
-                // this.particles[i].endYPosition = y;
-
+            newDataArray.forEach((data, i) => {
                 this.particles[i] = {
                     ...this.particles[i],
-                    x: x,
-                    y: y,
-                    startXPosition: x,
-                    startYPosition: y,
-                    endXPosition: x,
-                    endYPosition: y
+                    ...data
                 }
             });
         }
@@ -752,17 +772,17 @@ class myBanner {
                             p.y -= yStep;
                         }
                     } else if (p.liveTime >= outUntil) {
-                        xStep = this.particles[this.particles.length - 1 - i].xStep * 1.1;
-                        yStep = this.particles[this.particles.length - 1 - i].yStep * 1.1;
+                        let xBackStep = p.xBackStep;
+                        let yBackStep = p.yBackStep;
     
                         if (this.isLTR()) {
-                            p.x += xStep;
+                            p.x += xBackStep;
                         } else if (this.isRTL()) {
-                            p.x -= xStep;
+                            p.x -= xBackStep;
                         } else if (this.isUD()) {
-                            p.y += yStep;
+                            p.y += yBackStep;
                         } else if (this.isBU()) {
-                            p.y -= yStep;
+                            p.y -= yBackStep;
                         }
     
                         if (p.liveTime >= endTime) {
