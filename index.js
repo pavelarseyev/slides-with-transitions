@@ -139,14 +139,6 @@ class myBanner {
         this.createClipLine();
     }
 
-    isHorizontal() {
-        return this.transitionDirection === LTR || this.transitionDirection === RTL;
-    }
-
-    isVertical() {
-        return this.transitionDirection === UD || this.transitionDirection === BU;
-    }
-
     isLTR() {
         return this.transitionDirection === LTR;
     }
@@ -161,6 +153,14 @@ class myBanner {
 
     isBU() {
         return this.transitionDirection === BU;
+    }
+
+    isHorizontal() {
+        return this.isLTR() || this.isRTL();
+    }
+
+    isVertical() {
+        return this.isUD() || this.isBU();
     }
 
     isTR1() {
@@ -298,13 +298,13 @@ class myBanner {
                 this.drawBottomClip();
             }
             
-            if (this.isHorizontal() ) {
+            if ( this.isLTR() || this.isBU() ) {
                 this.ctx.drawImage(next.img, 0, 0, this.w, this.h);
 
                 if (this.debug) {
                     this.ctx.strokeText('Next', 20, this.h/2);
                 }
-            } else if (this.isVertical()) {
+            } else if (this.isRTL() || this.isUD()) {
                 this.ctx.drawImage(current.img, 0, 0, this.w, this.h);
                 if (this.debug) {
                     this.ctx.strokeText('Current', 20, this.h/2);
@@ -359,7 +359,7 @@ class myBanner {
         let current = this.images[this.currentImage];
         let next = this.images[(this.currentImage + 1) % this.images.length];
 
-        if (this.animationType === TR1) {
+        if (this.isTR1()) {
             if (this.currentTime >= (this.imageShowTime - this.transitionTime)) {
                 const changeOpacityStep = 1 / (this.transitionTime / (1000/this.frameRate));
 
@@ -382,6 +382,7 @@ class myBanner {
 
     createParticles() {
         if (this.isTR1() || this.isTR3()) {
+            let draw = false;
             let additionalColumns = 0;
             let additionalRows = 0;
 
@@ -419,10 +420,9 @@ class myBanner {
                     let pathY = this.h + additionalRowsOffset + particleColumnOffset;
                     let colOffset;
                     let rowOffset;
-                    let fill = 'transparent';
                     
                     if (this.isTR3()) {
-                        fill = this.currentColor;
+                        draw = true;
                         // move particles to start position outside of the screen;
                         if (this.isLTR()) {
                             colOffset = offsetXStep * (totalColumns - column - 1);
@@ -480,43 +480,22 @@ class myBanner {
                         xStep: pathX / this.frameShortStep(),
                         yStep: pathY / this.frameShortStep(),
                         liveTime: this.currentTime,
-                        fill
+                        fill: this.currentColor,
+                        draw,
                     });
                 }
             }
         } else if (this.isTR2()) {
             let particlesPerLine = 1;
-            let linesCount = (this.isHorizontal()) ? this.rows : this.cols;
+            let linesCount = this.isHorizontal() ? this.rows : this.cols;
             let x;
             let y;
-            let fill;
             let speed;
 
             for (let row = 0; row < linesCount; row++) {
-
-                // use additional colors for particles
-                if (this.useAdditionalColors) {
-                    let rowsPercent = linesCount / 100;
-                    let part1 = Math.round(rowsPercent * this.color1Percent);
-                    let part2 = Math.round(rowsPercent * this.color2Percent);
-                    let part3 = Math.round(rowsPercent * this.color3Percent);
-
-                    if (part1 && row + 1 <= part1) {
-                        fill = this.additionalColor1;
-                    } else if (part2 && row + 1 <= part1 + part2) {
-                        fill = this.additionalColor2;
-                    } else if (part3 && row + 1 <= part1 + part2 + part3) {
-                        fill = this.additionalColor3;
-                    } else {
-                        fill = this.currentColor;
-                    }
-                } else {
-                    fill = this.currentColor;
-                }
-
                 for (let particle = 0; particle < particlesPerLine; particle++) {
                     y = this.particleHeight * row;
-                    x = this.clipLine.currentXPos - this.particleWidth;
+                    x = this.clipLine.currentXPos - this.particleWidth - this.skewSizeAbs;
 
                     if (this.isHorizontal()) {
                         speed = (Math.random() * (this.w * 0.05) + this.w * 0.05);
@@ -524,38 +503,69 @@ class myBanner {
                     } else if (this.isVertical()) {
                         speed = (Math.random() * (this.h * 0.05) + this.h * 0.05);
                         x = this.particleWidth * row;
-                        y = this.clipLine.currentYPos - this.particleHeight;
+                        y = this.clipLine.currentYPos - this.particleHeight - this.skewSizeAbs;
                     } 
 
                     this.particles.push({
                         startXPosition: x,
-                        startYPosititon: y,
-                        x: x,
-                        y: y,
-                        row,
-                        fill: fill,
-                        speed
+                        startYPosition: y,
+                        x,
+                        y,
+                        fill: this.currentColor,
+                        speed,
+                        draw: true,
+                        liveTime: this.currentTime
                     });
                 }
             }
+        }
 
-            // shuffle the colors
-            if (this.useAdditionalColors) {
-                let linesPositionsArray;
+        // shuffle the colors
+        this.shuffleParticles();
+    }
 
-                linesPositionsArray = this.particles.map(p => {
-                    return {x: p.x, y: p.y}
-                })
+    shuffleParticles() {
+        if (this.useAdditionalColors) {
+            let particlesPercent = this.particles.length / 100;
+            let part1 = Math.round(particlesPercent * this.color1Percent);
+            let part2 = Math.round(particlesPercent * this.color2Percent);
+            let part3 = Math.round(particlesPercent * this.color3Percent);
+            let linesPositionsArray = [];
 
-                linesPositionsArray = linesPositionsArray.sort(() => Math.random() - 0.5);
+            this.particles.forEach((p, i) => {
+                if (part1 && (i + 1 <= part1)) {
+                    p.fill = this.additionalColor1;
+                } else if (part2 && (i + 1 <= part1 + part2)) {
+                    p.fill = this.additionalColor2;
+                } else if (part3 && (i + 1 <= part1 + part2 + part3)) {
+                    p.fill = this.additionalColor3;
+                } else {
+                    p.fill = this.currentColor;
+                }
 
-                linesPositionsArray.forEach(({x, y}, i) => {
-                    this.particles[i].x = x;
-                    this.particles[i].y = y;
-                    this.particles[i].startXPosition = x;
-                    this.particles[i].startYPosition = y;
-                });
-            }
+                linesPositionsArray.push({x: p.x, y: p.y});
+            });
+
+            linesPositionsArray = linesPositionsArray.sort(() => Math.random() - 0.5);
+
+            linesPositionsArray.forEach(({x, y}, i) => {
+                // this.particles[i].x = x;
+                // this.particles[i].y = y;
+                // this.particles[i].startXPosition = x;
+                // this.particles[i].startYPosition = y;
+                // this.particles[i].endXPosition = x;
+                // this.particles[i].endYPosition = y;
+
+                this.particles[i] = {
+                    ...this.particles[i],
+                    x: x,
+                    y: y,
+                    startXPosition: x,
+                    startYPosition: y,
+                    endXPosition: x,
+                    endYPosition: y
+                }
+            });
         }
     }
 
@@ -596,8 +606,8 @@ class myBanner {
             this.ctx.strokeStyle = 'yellow';
         }
 
-        this.particles.forEach(({ x, y, fill }, i) => {
-            if (fill !== 'transparent') {
+        this.particles.forEach(({ x, y, fill, draw }, i) => {
+            if (draw) {
                 if (this.debug) {
                     this.ctx.fillStyle = 'rgba(255, 0,0, .5)';
                 } else {
@@ -637,14 +647,14 @@ class myBanner {
         this.particles.forEach((p, i) => {
             if (this.isTR1()) {
                 if (p.liveTime > (this.imageShowTime - this.transitionTime)) {
-                    if (p.fill === 'transparent') {
-                        p.fill = Math.random() < 0.25 ? this.currentColor : 'transparent';
+                    if (p.draw === false) {
+                        p.draw = Math.random() < 0.25 ? true : false;
                     }
                     
                     if (p.liveTime > this.imageShowTime) {
-                        p.fill = Math.random() < 0.25 ? 'transparent' : this.currentColor;
+                        p.draw = Math.random() < 0.25 ? false : true;
 
-                        if (p.fill === 'transparent') {
+                        if (p.draw === false) {
                             p.liveTime = this.currentTime;
                         }
                     }
@@ -708,7 +718,7 @@ class myBanner {
                             p.x -= this.particleWidth;
                         } else if (this.isUD()) {
                             p.y += this.skewSizeAbs;
-                        } else if (this-this.isBU()) {
+                        } else if (this.isBU()) {
                             p.y -= this.particleHeight;
                         }
 
@@ -717,6 +727,7 @@ class myBanner {
 
                             //fill the particle to oposite color in case if the particle has on of the default colors, or leave the initial fill
                             p.fill = p.fill === this.particlesColor ? this.particlesColor2 : p.fill === this.particlesColor2 ? this.particlesColor : p.fill;
+
                             this.calculateShadowColor();
                         }
                     }
@@ -859,7 +870,6 @@ class myBanner {
         if (this.isLTR()) {
             this.clipLine.startXPos = fromLeft;
             this.clipLine.endXPos = fromRight;
-
         } else if (this.isRTL()) {
             this.clipLine.startXPos = fromRight;
             this.clipLine.endXPos = fromLeft;
