@@ -68,7 +68,6 @@ class myBanner {
         this.imageShowTime = (+options.imageShowTime > 0 ? +options.imageShowTime * 1000 : 3000) + this.transitionTime;
         this.images = [];
         this.currentImage = 0;
-        // this.maxImages = 4;
         //image options end
 
 
@@ -530,7 +529,7 @@ class myBanner {
 
                     this.particles.push({
                         startXPosition: x,
-                        startYPosisiton: y,
+                        startYPosititon: y,
                         x: x,
                         y: y,
                         row,
