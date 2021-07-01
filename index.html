@@ -12,7 +12,7 @@
         <div class="settings" id="settings">
             <div class="debug-holder">
                 <label>
-                    <input type="checkbox" id="debug-input" checked/>
+                    <input type="checkbox" id="debug-input"/>
                     Enable debug mode
                 </label>
             </div>
@@ -21,41 +21,41 @@
 
             <div class="settings-wrapper">
                 <div class="buttons">
-                    <button id="play">Play</button>
-                    <button id="pause" class="active">Pause</button>
+                    <button id="play" class="active">Play</button>
+                    <button id="pause">Pause</button>
                 </div>
                 <div>Animation type</div>
                 <select id="animation-type">
-                    <option value="Transition 1" >Transition 1</option>
-                    <option value="Transition 2" selected>Transition 2</option>
+                    <option value="Transition 1" selected>Transition 1</option>
+                    <option value="Transition 2" >Transition 2</option>
                     <option value="Transition 3" >Transition 3</option>
                 </select>
     
                 <div>Transition direction (only for 2nd and 3rd transitions)</div>
                 <select id="direction">
-                    <option value="Right-Left" >Right-Left</option>
+                    <option value="Right-Left" selected>Right-Left</option>
                     <option value="Left-Right" >Left-Right</option>
-                    <option value="Up-Down" selected>Up-Down</option>
+                    <option value="Up-Down" >Up-Down</option>
                     <option value="Bottom-Up" >Bottom-Up</option>
                     <!-- <option value="Center-Out">Center - Out</option>
                     <option value="Out-center">Out - center</option> -->
                 </select>
     
                 <div>Transition time (1/10 s)</div>
-                <input type="number" value="20" id="speed">
+                <input type="number" value="10" id="speed">
     
                 <div>Image show duration</div>
-                <input type="number" value="1" id="image-duration">
+                <input type="number" value="3" id="image-duration">
 
 
                 <div>Particles per row</div>
-                <input type="number" value="10" id="particles-per-row">
+                <input type="number" value="5" id="particles-per-row">
     
                 <div>Particles per column</div>
-                <input type="number" value="10" id="particles-per-column">
+                <input type="number" value="5" id="particles-per-column">
 
                 <div>Skew size</div>
-                <input type="number" id="skew" value="-1">
+                <input type="number" id="skew" value="1">
     
                 <div>Particles main color</div>
                 <input type="color" id="particles-color" value="#ffffff">
@@ -65,7 +65,7 @@
 
                 <div>
                     <label>
-                        <input type="checkbox" id="useColors" checked>
+                        <input type="checkbox" id="useColors">
                         Use additional colors
                     </label>
                 </div>

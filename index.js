@@ -424,7 +424,7 @@ class myBanner {
                     if (this.isTR3()) {
                         fill = this.currentColor;
                         // move particles to start position outside of the screen;
-                        if (this.transitionDirection === LTR) {
+                        if (this.isLTR()) {
                             colOffset = offsetXStep * (totalColumns - column - 1);
 
                             pathX += colOffset;
@@ -434,7 +434,7 @@ class myBanner {
                             }
 
                             x -= pathX;
-                        } else if (this.transitionDirection === RTL) {
+                        } else if (this.isRTL()) {
                             colOffset = offsetXStep * column;
 
                             pathX += colOffset;
@@ -444,7 +444,7 @@ class myBanner {
                             }
                             
                             x += pathX;
-                        } else if (this.transitionDirection === UD) {
+                        } else if (this.isUD()) {
                             rowOffset = offsetYStep * (totalRows - row -1);
 
                             pathY += rowOffset;
@@ -455,7 +455,7 @@ class myBanner {
 
                             y -= pathY;
 
-                        } else if (this.transitionDirection === BU) {
+                        } else if (this.isBU()) {
                             rowOffset = offsetYStep * row;
 
                             pathY += rowOffset;
@@ -653,13 +653,13 @@ class myBanner {
                 let accelerationX = 0;
                 let accelerationY = 0;
 
-                if (this.transitionDirection === LTR) {
+                if (this.isLTR()) {
                     accelerationX = Math.abs(p.x / this.w * 10) + 0.1;
-                } else if (this.transitionDirection === RTL) {
+                } else if (this.isRTL()) {
                     accelerationX = Math.abs(Math.abs(p.x / this.w - 1) * 10) + 0.1;
-                } else if (this.transitionDirection === UD) {
+                } else if (this.isUD()) {
                     accelerationY = Math.abs(p.y / this.h * 10) + 0.1;
-                } else if (this.transitionDirection === BU) {
+                } else if (this.isBU()) {
                     accelerationY = Math.abs(Math.abs(p.y / this.h - 1) * 10) + 0.1;
                 }
 
@@ -702,13 +702,13 @@ class myBanner {
                             p.y = this.clipLine.currentYPos;
                         }
 
-                        if (this.transitionDirection === LTR) {
+                        if (this.isLTR()) {
                             p.x += this.skewSizeAbs; 
-                        } else if (this.transitionDirection === RTL) {
+                        } else if (this.isRTL()) {
                             p.x -= this.particleWidth;
-                        } else if (this.transitionDirection === UD) {
+                        } else if (this.isUD()) {
                             p.y += this.skewSizeAbs;
-                        } else if (this-this.transitionDirection === BU) {
+                        } else if (this-this.isBU()) {
                             p.y -= this.particleHeight;
                         }
 
@@ -731,26 +731,26 @@ class myBanner {
                 
                 if (p.liveTime >= startTime) {
                     if (p.liveTime <= enterUntil) {
-                        if (this.transitionDirection === LTR) {   
+                        if (this.isLTR()) {   
                             p.x += xStep;
-                        } else if (this.transitionDirection === RTL) {
+                        } else if (this.isRTL()) {
                             p.x -= xStep;
-                        } else if (this.transitionDirection === UD) {
+                        } else if (this.isUD()) {
                             p.y += yStep;
-                        } else if (this.transitionDirection === BU) {
+                        } else if (this.isBU()) {
                             p.y -= yStep;
                         }
                     } else if (p.liveTime >= outUntil) {
                         xStep = this.particles[this.particles.length - 1 - i].xStep * 1.1;
                         yStep = this.particles[this.particles.length - 1 - i].yStep * 1.1;
     
-                        if (this.transitionDirection === LTR) {
+                        if (this.isLTR()) {
                             p.x += xStep;
-                        } else if (this.transitionDirection === RTL) {
+                        } else if (this.isRTL()) {
                             p.x -= xStep;
-                        } else if (this.transitionDirection === UD) {
+                        } else if (this.isUD()) {
                             p.y += yStep;
-                        } else if (this.transitionDirection === BU) {
+                        } else if (this.isBU()) {
                             p.y -= yStep;
                         }
     
@@ -856,18 +856,18 @@ class myBanner {
         let fromTop = 0 - (this.skewSizeAbs + this.cols + this.particleHeight + this.skewSizeAbs);
         let fromBottom = this.h + (this.particleHeight + this.skewSizeAbs + this.cols);
 
-        if (this.transitionDirection === LTR) {
+        if (this.isLTR()) {
             this.clipLine.startXPos = fromLeft;
             this.clipLine.endXPos = fromRight;
 
-        } else if (this.transitionDirection === RTL) {
+        } else if (this.isRTL()) {
             this.clipLine.startXPos = fromRight;
             this.clipLine.endXPos = fromLeft;
-        } else if (this.transitionDirection === BU) {
+        } else if (this.isBU()) {
             this.clipLine.startYPos = fromBottom;
             this.clipLine.endYPos = fromTop;
 
-        } else if (this.transitionDirection === UD) {
+        } else if (this.isUD()) {
             this.clipLine.startYPos = fromTop;
             this.clipLine.endYPos = fromBottom;
         }
@@ -880,16 +880,16 @@ class myBanner {
 
     drawClipLine() {
         this.ctx.save();
-        if (this.transitionDirection === LTR) {
+        if (this.isLTR()) {
             this.drawLeftClip();
             this.drawShadow('Left');
-        } else if (this.transitionDirection === RTL) {
+        } else if (this.isRTL()) {
             this.drawRightClip();
             this.drawShadow("Right");
-        } else if (this.transitionDirection === UD) {
+        } else if (this.isUD()) {
             this.drawTopClip();
             this.drawShadow('Top');
-        } else if (this.transitionDirection === BU) {
+        } else if (this.isBU()) {
             this.drawBottomClip();
             this.drawShadow('Bottom');
         }
@@ -920,25 +920,25 @@ class myBanner {
             let clipXStep = this.clipLine.pathX / this.frameShortStep();
             let clipYStep = this.clipLine.pathY / this.frameShortStep();
 
-            if (this.transitionDirection === LTR) {
+            if (this.isLTR()) {
                 if (this.clipLine.currentXPos <= this.clipLine.endXPos - clipXStep) {
                     this.clipLine.currentXPos += clipXStep;
                 } else {
                     this.clipLine.currentXPos += this.clipLine.endXPos - this.clipLine.currentXPos;
                 }
-            } else if (this.transitionDirection === RTL) {
+            } else if (this.isRTL()) {
                 if (this.clipLine.currentXPos >= this.clipLine.endXPos - clipXStep) {
                     this.clipLine.currentXPos -= clipXStep;
                 } else {
                     this.clipLine.currentXPos -= this.clipLine.currentXPos - this.clipLine.endXPos;
                 }
-            } else if (this.transitionDirection === UD) {
+            } else if (this.isUD()) {
                 if (this.clipLine.currentYPos <= this.clipLine.endYPos - clipYStep) {
                     this.clipLine.currentYPos += clipYStep;
                 } else {
                     this.clipLine.currentYPos += this.clipLine.endYPos - this.clipLine.currentYPos;
                 }
-            } else if (this.transitionDirection === BU) {
+            } else if (this.isBU()) {
                 if (this.clipLine.currentYPos >= this.clipLine.endYPos - clipYStep) {
                     this.clipLine.currentYPos -= clipYStep;
                 } else {
