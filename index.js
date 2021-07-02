@@ -4,6 +4,7 @@ const Widget = {
         img2: `img2.png`,
         img3: `img3.png`,
         img4: `img4.png`,
+        imageFit: 'Cover',
         //in seconds, default is 3
         imageShowTime: 3,
         // set the one tenth step, default is 1 second
@@ -68,6 +69,7 @@ class myBanner {
         this.imageShowTime = (+options.imageShowTime > 0 ? +options.imageShowTime * 1000 : 3000) + this.transitionTime;
         this.images = [];
         this.currentImage = 0;
+        this.imageFit = options.imageFit;
         //image options end
 
 
@@ -1143,6 +1145,7 @@ function addSettings() {
     const color2Percent = +document.getElementById('color2Percent').value;
     const additionalColor3 = convertHexToRgbA(document.getElementById('additional-color3').value, 1);
     const color3Percent = +document.getElementById('color3Percent').value;
+    const imageFit = document.getElementById('image-fit').value;
     
 
     if (banner) {
@@ -1170,7 +1173,8 @@ function addSettings() {
         additionalColor3,
         color1Percent,
         color2Percent,
-        color3Percent
+        color3Percent,
+        imageFit
     }
 
     banner = new myBanner(Widget.properties, debugInput.checked);
