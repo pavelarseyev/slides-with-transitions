@@ -1,6 +1,6 @@
 const Widget = {
     properties: {
-        img1: `img1.png`,
+        img1: `img1.png ` ,
         img2: `img2.png`,
         img3: `img3.png`,
         img4: `img4.png`,
@@ -33,6 +33,8 @@ const BU = 'Bottom-Up';
 const TR1 = 'Transition 1';
 const TR2 = 'Transition 2';
 const TR3 = 'Transition 3';
+const COVER = 'Cover';
+const CONTAIN = 'Contain';
 
 class myBanner {
     constructor(options, debug) {
@@ -112,7 +114,12 @@ class myBanner {
         this.loop = null;
 
         //wait until all images are loaded
-        Promise.all(this.createImages(options)).then(() => {
+        
+        Promise.all(this.createImages(options)).then(results => {
+            if (results.length && results[0]) {
+                results.forEach(img => this.images.push(img));
+                this.normalizeImageSize();
+            }
             this.calcSkewSize();
             this.calculateShadowColor();
             this.setupResize();
@@ -135,7 +142,7 @@ class myBanner {
         this.particleWidth = this.w / this.cols;
         this.particleHeight = this.h / this.rows;
         this.calcSkewSize();
-
+        this.normalizeImageSize();
         this.particles = [];
         this.createParticles();
         this.createClipLine();
@@ -226,6 +233,34 @@ class myBanner {
         }
     }
 
+    normalizeImageSize() {
+        if (this.images.length) {
+            this.images.forEach(image => {
+                let width = image.width * this.ratio;
+                let height = image.height * this.ratio;
+
+                if (this.imageFit === COVER) {
+                    let xRatio = this.w / width;
+                    let yRatio = this.h / height;
+
+                    let ratio = Math.max(xRatio, yRatio);
+
+                    image.width *= ratio;
+                    image.height *= ratio;
+                   
+                } else if (this.imageFit === CONTAIN) {
+                    let xRatio = this.w / image.width;
+                    let yRatio = this.h / image.height;
+    
+                    let ratio = Math.min(xRatio, yRatio);
+    
+                    image.width *= ratio;
+                    image.height *= ratio;
+                }
+            })
+        }
+    }
+
     //TODO: add Widget.optimisedImageUrls
     createImages(options) {
         const promiseArray = [];
@@ -253,21 +288,20 @@ class myBanner {
 
                     img.onload = () => {
                         document.body.appendChild(img);
-    
-                        this.images.push({
+
+                        res({
                             img,
                             width: img.width,
                             height: img.height,
                             opacity:  0
                         });
-    
+
                         img.remove();
-                        res();
                     };
+
                     img.src = url;
                 }));
             });
-
             return promiseArray;
         } else {
             return [Promise.resolve()];
