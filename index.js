@@ -248,7 +248,7 @@ class myBanner {
                     const img = document.createElement('img');
 
                     img.crossOrigin = 'Anonymous';
-                    
+
                     img.onload = () => {
                         document.body.appendChild(img);
     
@@ -272,6 +272,10 @@ class myBanner {
         }        
     }
 
+    drawSingleImage(image) {
+        this.ctx.drawImage(image.img, this.w/2 - image.width/2, this.h/2 - image.height/2, image.width, image.height);
+    }
+
     drawImages() {
         let current = this.images[this.currentImage];
         let next = this.images[(this.currentImage + 1) % this.images.length];
@@ -280,7 +284,7 @@ class myBanner {
             [next, current].forEach(image => {
                 this.ctx.save();
                 this.ctx.globalAlpha = image.opacity;
-                this.ctx.drawImage(image.img, this.w/2 - image.width/2, this.h/2 - image.height/2, image.width, image.height);
+                this.drawSingleImage(image);
                 this.ctx.restore();
             });
         } else if (this.isTR2()) {
@@ -301,13 +305,13 @@ class myBanner {
             }
             
             if ( this.isLTR() || this.isBU() ) {
-                this.ctx.drawImage(next.img, this.w/2 - next.width/2, this.h/2 - next.height/2, next.width, next.height);
+                this.drawSingleImage(next);
 
                 if (this.debug) {
                     this.ctx.strokeText('Next', 20, this.h/2);
                 }
             } else if (this.isRTL() || this.isUD()) {
-                this.ctx.drawImage(current.img, this.w/2 - current.width/2, this.h/2 - current.height/2, current.width, current.height);
+                this.drawSingleImage(current);
                 if (this.debug) {
                     this.ctx.strokeText('Current', 20, this.h/2);
                 }
@@ -329,13 +333,13 @@ class myBanner {
             }
 
             if (this.isLTR() || this.isBU()) {
-                this.ctx.drawImage(current.img, this.w/2 - current.width/2, this.h/2 - current.height/2, current.width, current.height);
+                this.drawSingleImage(current);
                 
                 if (this.debug) {
                     this.ctx.strokeText('Current', this.w - 200, this.h/2);
                 }
             } else if (this.isRTL() || this.isUD()) {
-                this.ctx.drawImage(next.img, this.w/2 - next.width/2, this.h/2 - next.height/2, next.width, next.height);
+                this.drawSingleImage(next);
                 
                 if (this.debug) {
                     this.ctx.strokeText('Current', this.w - 200, this.h/2);
@@ -343,7 +347,7 @@ class myBanner {
             }
             this.ctx.restore();
         } else if (this.isTR3()) {
-            this.ctx.drawImage(current.img, this.w/2 - current.width/2, this.h/2 - current.height/2, current.width, current.height);
+            this.drawSingleImage(current);
         }
 
         if (this.debug) {
