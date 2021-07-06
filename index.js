@@ -43,11 +43,16 @@ class myBanner {
         this.framesPerSecond = 0;
         this.animationType = options.animationType;
         this.transitionDirection = options.transitionDirection;
-        this.currentTime = 0;
+        
 
         //transition options start
-        this.transitionTime = +options.transitionTime > 0 ? +options.transitionTime * 100 : 1000;
-        this.transitionTimeThird = this.transitionTime / 3;
+        this.transitionTime = 0;
+        this.transitionTimeThird = 0;
+
+        this.imageShowTime = 0;
+        
+        this.currentTime = 0;
+        this.totalTime = 0;
         //transition options end
 
         // particles settings start
@@ -68,7 +73,6 @@ class myBanner {
         // particles settings end
 
         //image options start
-        this.imageShowTime = (+options.imageShowTime > 0 ? +options.imageShowTime * 1000 : 3000) + this.transitionTime;
         this.images = [];
         this.currentImage = 0;
         this.imageFit = options.imageFit;
@@ -120,6 +124,7 @@ class myBanner {
                 results.forEach(img => this.images.push(img));
                 this.normalizeImageSize();
             }
+            this.setTotalTime(options);
             this.calcSkewSize();
             this.calculateShadowColor();
             this.setupResize();
@@ -146,6 +151,18 @@ class myBanner {
         this.particles = [];
         this.createParticles();
         this.createClipLine();
+    }
+
+    resetPositionsAndColors() {
+        // reset color
+        this.currentColor = this.particlesColor;
+        this.calculateShadowColor();
+
+        //reset clipLine
+        this.createClipLine();
+
+        //reset particles position
+        this.createParticles();
     }
 
     isLTR() {
@@ -211,7 +228,7 @@ class myBanner {
     updateCurrentTime() {
         this.changeCurrentImageOnLoop();
 
-        if (this.currentTime > this.imageShowTime) {
+        if (this.currentTime > this.totalTime) {
             this.currentTime = 0;
         }
 
@@ -224,9 +241,21 @@ class myBanner {
         this.shadowColor = this.currentColor.replace(/(\d\))$/gi, `${alpha})`);
     }
 
+    setTotalTime(options) {
+        this.transitionTime = +options.transitionTime > 0 ? +options.transitionTime * 100 : 1000;
+        this.transitionTimeThird = this.transitionTime / 3;
+        // image show time (from settings or from widget duration)
+        
+        if (this.images.length) {
+            this.imageShowTime = (+options.imageShowTime > 0 ? +options.imageShowTime * 1000 : 3000);
+        }
+
+        this.totalTime = this.imageShowTime + this.transitionTime;
+    }
+
     changeCurrentImageOnLoop() {
         if (this.images.length) {
-            if (this.currentTime >= this.imageShowTime) {
+            if (this.currentTime >= this.totalTime) {
                 this.currentImage++;
                 this.currentImage = this.currentImage % this.images.length;
             }
@@ -387,7 +416,11 @@ class myBanner {
             }
             this.ctx.restore();
         } else if (this.isTR3()) {
-            this.drawSingleImage(current);
+            [current, next].forEach(image => {
+                if (image.opacity) { 
+                    this.drawSingleImage(image);
+                }
+            });
         }
 
         if (this.debug) {
@@ -406,8 +439,8 @@ class myBanner {
         let next = this.images[(this.currentImage + 1) % this.images.length];
 
         if (this.isTR1()) {
-            if (this.currentTime >= (this.imageShowTime - this.transitionTime)) {
-                const changeOpacityStep = 1 / (this.transitionTime / (1000/this.frameRate));
+            if (this.currentTime >= (this.totalTime - this.transitionTime + this.transitionTimeThird)) {
+                const changeOpacityStep = 1 / ((this.transitionTime - this.transitionTimeThird) / this.msPerFrame());
 
                 if (current.opacity > 0) {
                     // hide current images
@@ -423,10 +456,20 @@ class myBanner {
             } else {
                 current.opacity = 1;
             }
+        } else if (this.isTR3()) {
+            if (this.currentTime >= this.totalTime - this.transitionTimeThird) {
+                current.opacity = 0;
+                next.opacity = 1;
+            } else {
+                current.opacity = 1;
+                next.opacity = 0;
+            }
         }
     }
 
     createParticles() {
+        this.particles = [];
+
         if (this.isTR1() || this.isTR3()) {
             let draw = false;
             let additionalColumns = 0;
@@ -448,6 +491,8 @@ class myBanner {
                     let additionalRowsOffset = this.particleHeight * (additionalRows/2);
                     let skewXOffset = this.skewSize * (totalRows - row - 1);
                     let skewYOffset = this.skewSize * (totalColumns - column - 1);
+                    let liveTimeShowOffset = Math.random() * (this.transitionTimeThird*2);
+                    let liveTimeHideOffset = Math.random() * this.transitionTimeThird;  
 
                     let x = this.particleWidth * column;
                     let y = this.particleHeight * row;
@@ -467,6 +512,8 @@ class myBanner {
                     let colOffset;
                     let rowOffset;
                     
+
+                    // add field for transition 3 particles
                     if (this.isTR3()) {
                         draw = true;
                         // move particles to start position outside of the screen;
@@ -528,12 +575,13 @@ class myBanner {
                         xBackStep: 0,
                         yBackStep: 0,
                         liveTime: this.currentTime,
+                        liveTimeShowOffset,
+                        liveTimeHideOffset,
                         fill: this.currentColor,
                         draw,
                     });
                 }
             }
-
             //add back speed for each particle
             this.particles.forEach((p, i) => {
                 p.xBackStep = this.particles[this.particles.length - 1 - i].xStep * 1.1;
@@ -575,64 +623,64 @@ class myBanner {
         }
 
         // shuffle the colors
-        this.shuffleParticles();
+        if (this.useAdditionalColors) {
+            this.shuffleParticles();
+        }
     }
 
     shuffleParticles() {
-        if (this.useAdditionalColors) {
-            let particlesPercent = this.particles.length / 100;
-            let part1 = Math.round(particlesPercent * this.color1Percent);
-            let part2 = Math.round(particlesPercent * this.color2Percent);
-            let part3 = Math.round(particlesPercent * this.color3Percent);
-            let newDataArray = [];
+        let particlesPercent = this.particles.length / 100;
+        let part1 = Math.round(particlesPercent * this.color1Percent);
+        let part2 = Math.round(particlesPercent * this.color2Percent);
+        let part3 = Math.round(particlesPercent * this.color3Percent);
+        let newDataArray = [];
 
-            this.particles.forEach((p, i) => {
-                if (part1 && (i + 1 <= part1)) {
-                    p.fill = this.additionalColor1;
-                } else if (part2 && (i + 1 <= part1 + part2)) {
-                    p.fill = this.additionalColor2;
-                } else if (part3 && (i + 1 <= part1 + part2 + part3)) {
-                    p.fill = this.additionalColor3;
-                } else {
-                    p.fill = this.currentColor;
-                }
-                
-                if (this.isTR1() || this.isTR3()) {
-                    newDataArray.push({
-                        startXPosition: p.startXPosition,
-                        startYPosition: p.startYPosition,
-                        endXPosition: p.endXPosition,
-                        endYPosition: p.endYPosition,
-                        x: p.x, 
-                        y: p.y, 
-                        pathX: p.pathX,
-                        pathY: p.pathY, 
-                        xStep: p.xStep, 
-                        yStep: p.yStep,
-                        xBackStep: p.xBackStep,
-                        yBackStep: p.yBackStep
-                    });
-                } else if (this.isTR2()) {
-                    newDataArray.push({
-                        startXPosition: p.x,
-                        startYPosition: p.y,
-                        x: p.x,
-                        y: p.y,
-                        speed: p.speed
-                    });
-                }
+        this.particles.forEach((p, i) => {
+            if (part1 && (i + 1 <= part1)) {
+                p.fill = this.additionalColor1;
+            } else if (part2 && (i + 1 <= part1 + part2)) {
+                p.fill = this.additionalColor2;
+            } else if (part3 && (i + 1 <= part1 + part2 + part3)) {
+                p.fill = this.additionalColor3;
+            } else {
+                p.fill = this.currentColor;
+            }
+            
+            if (this.isTR1() || this.isTR3()) {
+                newDataArray.push({
+                    startXPosition: p.startXPosition,
+                    startYPosition: p.startYPosition,
+                    endXPosition: p.endXPosition,
+                    endYPosition: p.endYPosition,
+                    x: p.x, 
+                    y: p.y, 
+                    pathX: p.pathX,
+                    pathY: p.pathY, 
+                    xStep: p.xStep, 
+                    yStep: p.yStep,
+                    xBackStep: p.xBackStep,
+                    yBackStep: p.yBackStep
+                });
+            } else if (this.isTR2()) {
+                newDataArray.push({
+                    startXPosition: p.x,
+                    startYPosition: p.y,
+                    x: p.x,
+                    y: p.y,
+                    speed: p.speed
+                });
+            }
 
-            });
+        });
 
-            newDataArray = newDataArray.sort(() => Math.random() - 0.5);
+        newDataArray = newDataArray.sort(() => Math.random() - 0.5);
 
-            newDataArray.forEach((data, i) => {
-                this.particles[i] = {
-                    ...this.particles[i],
-                    ...data
-                }
-            });
-        }
+        newDataArray.forEach((data, i) => {
+            this.particles[i] = {
+                ...this.particles[i],
+                ...data
+            }
+        });
     }
 
     drawHorizontalParticle(x, y) {
@@ -712,16 +760,15 @@ class myBanner {
     updateParticles() {
         this.particles.forEach((p, i) => {
             if (this.isTR1()) {
-                if (p.liveTime > (this.imageShowTime - this.transitionTime)) {
-                    if (p.draw === false) {
-                        p.draw = Math.random() < 0.25 ? true : false;
-                    }
+                if (p.liveTime >= this.totalTime - this.transitionTime + p.liveTimeShowOffset) {
+                    p.draw = true;
                     
-                    if (p.liveTime > this.imageShowTime) {
-                        p.draw = Math.random() < 0.25 ? false : true;
-
-                        if (p.draw === false) {
-                            p.liveTime = this.currentTime;
+                    if (p.liveTime >= this.totalTime - this.transitionTimeThird + p.liveTimeHideOffset) {
+                        p.draw = false;
+                        
+                        if (p.liveTime >= this.totalTime) {
+                            p.liveTime = 0;
+                            p.draw = false;
                         }
                     }
                 }
@@ -767,7 +814,7 @@ class myBanner {
                 }
 
                 // apply values
-                if (this.currentTime >= this.imageShowTime - this.transitionTime) {
+                if (this.currentTime >= this.totalTime - this.transitionTime) {
                     p.x += xStep;
                     p.y += yStep;
 
@@ -788,7 +835,7 @@ class myBanner {
                             p.y -= this.particleHeight;
                         }
 
-                        if (this.currentTime >= this.imageShowTime) {
+                        if (this.currentTime >= this.totalTime) {
                             this.currentColor = this.currentImage % 2 === 0 ? this.particlesColor2 : this.particlesColor;
 
                             //fill the particle to oposite color in case if the particle has on of the default colors, or leave the initial fill
@@ -801,10 +848,10 @@ class myBanner {
             } else if(this.isTR3()) {
                 let xStep = p.xStep;
                 let yStep = p.yStep;
-                let startTime = this.imageShowTime - this.transitionTime + this.transitionTimeThird;
+                let startTime = this.totalTime - this.transitionTime;
                 let enterUntil = startTime + this.transitionTimeThird;
-                let outUntil = this.imageShowTime;
-                let endTime = outUntil + this.transitionTimeThird;
+                let outFrom = this.totalTime - this.transitionTimeThird;
+                let endTime = this.totalTime;
                 
                 if (p.liveTime >= startTime) {
                     if (p.liveTime <= enterUntil) {
@@ -817,7 +864,7 @@ class myBanner {
                         } else if (this.isBU()) {
                             p.y -= yStep;
                         }
-                    } else if (p.liveTime >= outUntil) {
+                    } else if (p.liveTime >= outFrom) {
                         let xBackStep = p.xBackStep;
                         let yBackStep = p.yBackStep;
     
@@ -992,7 +1039,7 @@ class myBanner {
             this.clipLine.clipLeftYPoint = this.clipLine.clipRightYPoint = this.clipLine.currentYPos;
         }
 
-        if (this.currentTime >= this.imageShowTime - (this.transitionTime / 3)) {
+        if (this.currentTime >= this.totalTime - this.transitionTimeThird) {
             let clipXStep = this.clipLine.pathX / this.frameShortStep();
             let clipYStep = this.clipLine.pathY / this.frameShortStep();
 
@@ -1022,7 +1069,7 @@ class myBanner {
                 }
             }
 
-            if (this.currentTime >= this.imageShowTime) {
+            if (this.currentTime >= this.totalTime) {
                 this.clipLine.currentXPos = this.clipLine.startXPos;
                 this.clipLine.currentYPos = this.clipLine.startYPos; 
             }
